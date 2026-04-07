@@ -18,7 +18,7 @@ if config.config_file_name is not None:
 
 # Import all models so that Base has them registered
 from app.core.database import Base
-from app.models import User, Course, CourseEnrollment, Assessment, Submission, LearningLog  # noqa: F401
+from app.models import User, Course, CourseEnrollment, Assessment, Submission, LearningLog, CareerGoal  # noqa: F401
 
 # add your model's MetaData object here for 'autogenerate' support
 target_metadata = Base.metadata

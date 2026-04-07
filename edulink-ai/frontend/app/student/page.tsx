@@ -43,6 +43,14 @@ export default function StudentHome() {
         <ProgressCard label="총 제출" value={`${progress.totalSubmissions}건`} color="text-purple-600" />
       </div>
 
+      {/* 진로 배너 */}
+      <Link href="/student/career">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-5 text-white cursor-pointer hover:opacity-95 transition-opacity">
+          <p className="font-bold text-lg mb-1">나의 진로 탐색하기</p>
+          <p className="text-indigo-100 text-sm">AI와 함께 꿈을 설정하고, 진로 안내 · 상담 · 예상 문제를 받아보세요!</p>
+        </div>
+      </Link>
+
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-4">AI 맞춤 추천</h2>
         <RecommendList recommendations={recommendations} />

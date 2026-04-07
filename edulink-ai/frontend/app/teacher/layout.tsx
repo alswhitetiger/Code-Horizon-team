@@ -26,6 +26,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
           <span className="font-bold text-indigo-600 text-lg">EduLink AI</span>
           <Link href="/teacher" className="text-sm text-gray-600 hover:text-indigo-600">대시보드</Link>
           <Link href="/teacher/questions" className="text-sm text-gray-600 hover:text-indigo-600">문제 생성</Link>
+          <Link href="/teacher/career" className="text-sm text-gray-600 hover:text-indigo-600">학생 진로</Link>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-600">{user?.name || '교사'}</span>

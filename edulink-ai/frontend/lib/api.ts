@@ -61,4 +61,20 @@ export const adminAPI = {
   getStudents: () => api.get('/api/admin/students').then(r => r.data),
 }
 
+// Career
+export const careerAPI = {
+  getGoal: () => api.get('/api/career/goal').then(r => r.data),
+  setGoal: (career_name: string, reason?: string) =>
+    api.post('/api/career/goal', { career_name, reason }).then(r => r.data),
+  getGuidance: () => api.get('/api/career/guidance').then(r => r.data),
+  chat: (message: string, history: Array<{ role: string; content: string }>) =>
+    api.post('/api/career/chat', { message, history }).then(r => r.data),
+  getQuestions: (career_name: string, subject?: string, count = 5) =>
+    api.post('/api/career/questions', { career_name, subject, count }).then(r => r.data),
+  // 교사용
+  getStudentsCareers: () => api.get('/api/career/teacher/students').then(r => r.data),
+  teacherGenerateQuestions: (career_name: string, subject?: string, count = 5) =>
+    api.post('/api/career/teacher/questions', { career_name, subject, count }).then(r => r.data),
+}
+
 export default api

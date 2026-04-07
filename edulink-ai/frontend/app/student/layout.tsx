@@ -25,6 +25,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div className="flex items-center gap-6">
           <span className="font-bold text-indigo-600 text-lg">EduLink AI</span>
           <Link href="/student" className="text-sm text-gray-600 hover:text-indigo-600">학습 홈</Link>
+          <Link href="/student/career" className="text-sm text-gray-600 hover:text-indigo-600">나의 진로</Link>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-600">{user?.name || '학생'}</span>
