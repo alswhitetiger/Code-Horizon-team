@@ -42,6 +42,8 @@ export const studentAPI = {
   getCourses: () => api.get('/api/student/courses').then(r => r.data),
   getAssessments: (courseId: string) =>
     api.get(`/api/student/courses/${courseId}/assessments`).then(r => r.data),
+  getAssessment: (assessmentId: string) =>
+    api.get(`/api/student/assessments/${assessmentId}`).then(r => r.data),
   submit: (data: { assessment_id: string; answers: Record<string, string> }) =>
     api.post('/api/student/submissions', data).then(r => r.data),
   getProgress: () => api.get('/api/student/progress').then(r => r.data),
