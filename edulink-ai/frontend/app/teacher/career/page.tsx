@@ -65,7 +65,7 @@ export default function TeacherCareerPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">학생 진로 현황</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">학생 진로 현황</h1>
         <p className="text-sm text-gray-500 mt-1">학생들의 진로 목표를 파악하고 맞춤 수업을 준비하세요.</p>
       </div>
 
@@ -100,7 +100,7 @@ export default function TeacherCareerPage() {
                 >
                   <div className="flex items-center gap-3">
                     <Badge variant={career === '미설정' ? 'danger' : 'info'}>{career}</Badge>
-                    <span className="text-sm text-gray-500">{group.length}명</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{group.length}명</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {career !== '미설정' && (
@@ -124,7 +124,7 @@ export default function TeacherCareerPage() {
                       <div key={s.studentId} className="flex items-start gap-3 text-sm">
                         <span className="font-medium text-gray-800 w-20 shrink-0">{s.studentName}</span>
                         {s.reason ? (
-                          <span className="text-gray-500">"{s.reason}"</span>
+                          <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500">"{s.reason}"</span>
                         ) : (
                           <span className="text-gray-400 italic">이유 미입력</span>
                         )}
@@ -151,7 +151,7 @@ export default function TeacherCareerPage() {
                   value={selectedCareer}
                   onChange={e => setSelectedCareer(e.target.value)}
                   placeholder="예: 의사, 소프트웨어 엔지니어"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
               <div>
@@ -161,7 +161,7 @@ export default function TeacherCareerPage() {
                   value={subject}
                   onChange={e => setSubject(e.target.value)}
                   placeholder="예: 수학, 생명과학, 정보"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>
@@ -181,7 +181,7 @@ export default function TeacherCareerPage() {
           {generatedQuestions.length > 0 && (
             <div className="mt-6 space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-gray-800">
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200">
                   {selectedCareer} 연계 문제 ({subject && `${subject} 과목`})
                 </h3>
                 <button
@@ -198,12 +198,12 @@ export default function TeacherCareerPage() {
                 </button>
               </div>
               {generatedQuestions.map((q, i) => (
-                <div key={i} className="border border-gray-200 rounded-xl p-4 space-y-2">
+                <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-2">
                   <div className="flex items-center gap-2">
                     <Badge variant={q.type === '객관식' ? 'info' : q.type === '단답형' ? 'success' : 'warning'}>
                       {q.type}
                     </Badge>
-                    <span className="text-xs text-gray-400">Q{i + 1}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">Q{i + 1}</span>
                   </div>
                   <p className="font-medium text-gray-900 text-sm">{q.content}</p>
                   {q.options && (
@@ -215,10 +215,10 @@ export default function TeacherCareerPage() {
                       ))}
                     </ul>
                   )}
-                  <div className="bg-green-50 p-2 rounded-lg text-xs space-y-1">
-                    <p className="text-green-800 font-medium">정답: {q.answer}</p>
-                    <p className="text-green-700">{q.explanation}</p>
-                    <p className="text-green-500">{q.career_relevance}</p>
+                  <div className="bg-green-50 dark:bg-green-900/30 p-2 rounded-lg text-xs space-y-1">
+                    <p className="text-green-800 dark:text-green-300 font-medium">정답: {q.answer}</p>
+                    <p className="text-green-700 dark:text-green-400">{q.explanation}</p>
+                    <p className="text-green-500 dark:text-green-400">{q.career_relevance}</p>
                   </div>
                 </div>
               ))}

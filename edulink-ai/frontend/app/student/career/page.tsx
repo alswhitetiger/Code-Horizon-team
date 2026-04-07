@@ -136,14 +136,14 @@ export default function CareerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">나의 진로</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">나의 진로</h1>
         <p className="text-sm text-gray-500 mt-1">
           {savedCareer ? `목표: ${savedCareer.careerName}` : '꿈을 설정하고 AI와 함께 준비하세요!'}
         </p>
       </div>
 
       {/* 탭 */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
         {TABS.map(t => (
           <button
             key={t.key}
@@ -173,7 +173,7 @@ export default function CareerPage() {
                 value={careerName}
                 onChange={e => setCareerName(e.target.value)}
                 placeholder="예: 의사, 소프트웨어 엔지니어, 교사, 건축가..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
@@ -182,7 +182,7 @@ export default function CareerPage() {
                 value={reason}
                 onChange={e => setReason(e.target.value)}
                 placeholder="왜 이 직업을 꿈꾸나요? 어떤 계기가 있었나요?"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 rows={3}
               />
             </div>
@@ -207,7 +207,7 @@ export default function CareerPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
-                  <h3 className="font-semibold text-gray-800 mb-3">필요 역량</h3>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">필요 역량</h3>
                   <div className="flex flex-wrap gap-2">
                     {guidance.required_skills.map((s, i) => (
                       <Badge key={i} variant="info">{s}</Badge>
@@ -215,7 +215,7 @@ export default function CareerPage() {
                   </div>
                 </Card>
                 <Card>
-                  <h3 className="font-semibold text-gray-800 mb-3">관련 학교 과목</h3>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">관련 학교 과목</h3>
                   <div className="flex flex-wrap gap-2">
                     {guidance.related_subjects.map((s, i) => (
                       <Badge key={i} variant="success">{s}</Badge>
@@ -223,7 +223,7 @@ export default function CareerPage() {
                   </div>
                 </Card>
                 <Card>
-                  <h3 className="font-semibold text-gray-800 mb-3">관련 대학 전공</h3>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">관련 대학 전공</h3>
                   <div className="flex flex-wrap gap-2">
                     {guidance.related_majors.map((s, i) => (
                       <Badge key={i} variant="warning">{s}</Badge>
@@ -232,7 +232,7 @@ export default function CareerPage() {
                 </Card>
                 {guidance.certifications.length > 0 && (
                   <Card>
-                    <h3 className="font-semibold text-gray-800 mb-3">관련 자격증 / 시험</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">관련 자격증 / 시험</h3>
                     <div className="flex flex-wrap gap-2">
                       {guidance.certifications.map((s, i) => (
                         <Badge key={i} variant="danger">{s}</Badge>
@@ -243,19 +243,19 @@ export default function CareerPage() {
               </div>
 
               <Card>
-                <h3 className="font-semibold text-gray-800 mb-3">단계별 로드맵</h3>
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">단계별 로드맵</h3>
                 <ol className="space-y-2">
                   {guidance.roadmap.map((step, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold flex items-center justify-center">{i + 1}</span>
-                      <span className="text-sm text-gray-700">{step}</span>
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{step}</span>
                     </li>
                   ))}
                 </ol>
               </Card>
 
-              <Card className="bg-indigo-50 border-indigo-200">
-                <p className="text-indigo-700 font-medium text-sm">{guidance.encouragement}</p>
+              <Card className="bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800">
+                <p className="text-indigo-700 dark:text-indigo-300 font-medium text-sm">{guidance.encouragement}</p>
               </Card>
 
               <Button onClick={() => { setGuidance(null); setTab('guidance'); handleLoadGuidance() }} variant="secondary" className="w-full">
@@ -271,7 +271,7 @@ export default function CareerPage() {
         <Card className="flex flex-col" style={{ height: '560px' }}>
           <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
             {messages.length === 0 && (
-              <div className="text-center text-gray-400 text-sm py-8">
+              <div className="text-center text-gray-400 dark:text-gray-500 text-sm py-8">
                 <p className="text-2xl mb-2">💬</p>
                 {savedCareer
                   ? `${savedCareer.careerName}에 대해 무엇이든 물어보세요!`
@@ -283,7 +283,7 @@ export default function CareerPage() {
                 <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
                   msg.role === 'user'
                     ? 'bg-indigo-600 text-white rounded-br-none'
-                    : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
                 }`}>
                   {msg.content}
                 </div>
@@ -309,7 +309,7 @@ export default function CareerPage() {
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
               placeholder="진로에 대해 궁금한 것을 물어보세요..."
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <Button onClick={handleSendMessage} disabled={!input.trim() || loading}>전송</Button>
           </div>
@@ -324,7 +324,7 @@ export default function CareerPage() {
           ) : questions.length > 0 ? (
             <>
               <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-500">{savedCareer?.careerName} 관련 예상 문제 {questions.length}개</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{savedCareer?.careerName} 관련 예상 문제 {questions.length}개</p>
                 <button
                   onClick={() => { setQuestions([]); handleLoadQuestions() }}
                   className="text-sm text-indigo-600 hover:underline"
@@ -338,7 +338,7 @@ export default function CareerPage() {
                     <Badge variant={q.type === '객관식' ? 'info' : q.type === '단답형' ? 'success' : 'warning'}>
                       {q.type}
                     </Badge>
-                    <span className="text-xs text-gray-400">Q{i + 1}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">Q{i + 1}</span>
                   </div>
                   <p className="font-medium text-gray-900 mb-3">{q.content}</p>
 
@@ -352,7 +352,7 @@ export default function CareerPage() {
                               : 'border-indigo-500 bg-indigo-50'
                             : revealedAnswers[i] && opt === q.answer
                             ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                         }`}>
                           <input
                             type="radio"
@@ -386,9 +386,9 @@ export default function CareerPage() {
                       정답 및 해설 보기
                     </button>
                   ) : (
-                    <div className="mt-2 p-3 bg-blue-50 rounded-lg text-sm space-y-1">
+                    <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-sm space-y-1">
                       <p className="font-medium text-blue-800">정답: {q.answer}</p>
-                      <p className="text-blue-700">{q.explanation}</p>
+                      <p className="text-blue-700 dark:text-blue-400">{q.explanation}</p>
                       <p className="text-blue-500 text-xs">{q.career_relevance}</p>
                     </div>
                   )}

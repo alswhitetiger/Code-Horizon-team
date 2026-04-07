@@ -33,21 +33,21 @@ export default function TeacherDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">교사 대시보드</h1>
-        <p className="text-gray-500 text-sm">내 강의와 학생 현황을 확인하세요.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">교사 대시보드</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">내 강의와 학생 현황을 확인하세요.</p>
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">내 강의 ({courses.length})</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">내 강의 ({courses.length})</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {courses.map(c => (
             <Card key={c.id} className="hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start mb-3">
-                <span className="text-xs font-medium bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{c.subject}</span>
-                <span className="text-xs text-gray-400">{c.gradeLevel}</span>
+                <span className="text-xs font-medium bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full">{c.subject}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">{c.gradeLevel}</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">{c.title}</h3>
-              <p className="text-sm text-gray-500">학생 {c.studentCount || 0}명</p>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{c.title}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">학생 {c.studentCount || 0}명</p>
             </Card>
           ))}
         </div>
@@ -61,7 +61,7 @@ export default function TeacherDashboard() {
       </div>
 
       <Card>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">최근 제출 현황</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">최근 제출 현황</h2>
         <SubmissionList submissions={submissions} />
       </Card>
     </div>

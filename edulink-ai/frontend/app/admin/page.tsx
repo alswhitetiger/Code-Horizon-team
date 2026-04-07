@@ -36,18 +36,18 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">관리자 대시보드</h1>
-        <p className="text-gray-500 text-sm">전체 학습 현황을 모니터링합니다.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">관리자 대시보드</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">전체 학습 현황을 모니터링합니다.</p>
       </div>
 
       <MetricCards metrics={metrics} />
 
       <Card>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">주간 활성 현황</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">주간 활성 현황</h2>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
@@ -59,12 +59,12 @@ export default function AdminDashboard() {
       </Card>
 
       <Card>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">이탈 위험 학생</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">이탈 위험 학생</h2>
         <AtRiskTable students={atRisk} />
       </Card>
 
       <Card>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">AI 자동 리포트</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">AI 자동 리포트</h2>
         <ReportGenerator />
       </Card>
     </div>
