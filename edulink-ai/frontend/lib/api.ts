@@ -12,10 +12,29 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+const DEMO_ACCOUNTS: Record<string, { id: string; name: string; role: string }> = {
+  'teacher@demo.com': { id: 'demo-t1', name: '김교사 (데모)', role: 'teacher' },
+  'student@demo.com': { id: 'demo-s1', name: '김학생 (데모)', role: 'student' },
+  'admin@demo.com':   { id: 'demo-a1', name: '관리자 (데모)', role: 'admin' },
+}
+
 // Auth
 export const authAPI = {
-  login: (email: string, password: string) =>
-    api.post('/api/auth/login', { email, password }).then(r => r.data),
+  login: async (email: string, password: string) => {
+    try {
+      return await api.post('/api/auth/login', { email, password }).then(r => r.data)
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: object; code?: string }
+      // Backend unreachable → use demo mock accounts
+      if (!axiosErr.response && password === 'demo1234' && DEMO_ACCOUNTS[email]) {
+        return {
+          access_token: `demo-token-${email}`,
+          user: { email, ...DEMO_ACCOUNTS[email] },
+        }
+      }
+      throw err
+    }
+  },
   register: (email: string, password: string, name: string, role: string) =>
     api.post('/api/auth/register', { email, password, name, role }).then(r => r.data),
   me: () => api.get('/api/auth/me').then(r => r.data),
