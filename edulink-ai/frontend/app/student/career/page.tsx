@@ -3,8 +3,8 @@ import { useEffect, useState, useRef } from 'react'
 import { careerAPI } from '@/lib/api'
 import Card from '@/components/ui/Card'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
+import Badge from '@/components/ui/Badge'
 
 interface CareerGuidance {
   overview: string
@@ -21,16 +21,7 @@ interface ChatMessage {
   content: string
 }
 
-interface CareerQuestion {
-  type: string
-  content: string
-  options: string[] | null
-  answer: string
-  explanation: string
-  career_relevance: string
-}
-
-type Tab = 'goal' | 'guidance' | 'chat' | 'questions'
+type Tab = 'goal' | 'guidance' | 'chat'
 
 export default function CareerPage() {
   const [tab, setTab] = useState<Tab>('goal')
@@ -40,9 +31,6 @@ export default function CareerPage() {
   const [guidance, setGuidance] = useState<CareerGuidance | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
-  const [questions, setQuestions] = useState<CareerQuestion[]>([])
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({})
-  const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({})
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -109,26 +97,10 @@ export default function CareerPage() {
     }
   }
 
-  const handleLoadQuestions = async () => {
-    if (questions.length > 0) { setTab('questions'); return }
-    if (!savedCareer) { alert('진로 목표를 먼저 설정해주세요.'); setTab('goal'); return }
-    setLoading(true)
-    try {
-      const res = await careerAPI.getQuestions(savedCareer.careerName, undefined, 5)
-      setQuestions(res.questions)
-      setSelectedAnswers({})
-      setRevealedAnswers({})
-    } finally {
-      setLoading(false)
-    }
-    setTab('questions')
-  }
-
   const TABS: { key: Tab; label: string }[] = [
     { key: 'goal', label: '꿈 설정' },
     { key: 'guidance', label: '진로 안내' },
     { key: 'chat', label: 'AI 상담' },
-    { key: 'questions', label: '예상 문제' },
   ]
 
   if (pageLoading) return <LoadingSpinner size="lg" />
@@ -149,7 +121,6 @@ export default function CareerPage() {
             key={t.key}
             onClick={() => {
               if (t.key === 'guidance') handleLoadGuidance()
-              else if (t.key === 'questions') handleLoadQuestions()
               else setTab(t.key)
             }}
             className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
@@ -316,92 +287,6 @@ export default function CareerPage() {
         </Card>
       )}
 
-      {/* 예상 문제 탭 */}
-      {tab === 'questions' && (
-        <div className="space-y-4">
-          {loading ? (
-            <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
-          ) : questions.length > 0 ? (
-            <>
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{savedCareer?.careerName} 관련 예상 문제 {questions.length}개</p>
-                <button
-                  onClick={() => { setQuestions([]); handleLoadQuestions() }}
-                  className="text-sm text-indigo-600 hover:underline"
-                >
-                  새 문제 생성
-                </button>
-              </div>
-              {questions.map((q, i) => (
-                <Card key={i}>
-                  <div className="flex items-start justify-between mb-3">
-                    <Badge variant={q.type === '객관식' ? 'info' : q.type === '단답형' ? 'success' : 'warning'}>
-                      {q.type}
-                    </Badge>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">Q{i + 1}</span>
-                  </div>
-                  <p className="font-medium text-gray-900 mb-3">{q.content}</p>
-
-                  {q.options ? (
-                    <div className="space-y-2 mb-3">
-                      {q.options.map((opt, j) => (
-                        <label key={j} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer border transition-colors ${
-                          selectedAnswers[i] === opt
-                            ? revealedAnswers[i]
-                              ? opt === q.answer ? 'border-green-500 bg-green-50' : 'border-red-400 bg-red-50'
-                              : 'border-indigo-500 bg-indigo-50'
-                            : revealedAnswers[i] && opt === q.answer
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                        }`}>
-                          <input
-                            type="radio"
-                            name={`q-${i}`}
-                            value={opt}
-                            checked={selectedAnswers[i] === opt}
-                            onChange={() => setSelectedAnswers(a => ({ ...a, [i]: opt }))}
-                            disabled={revealedAnswers[i]}
-                            className="text-indigo-600"
-                          />
-                          <span className="text-sm">{opt}</span>
-                        </label>
-                      ))}
-                    </div>
-                  ) : (
-                    <textarea
-                      value={selectedAnswers[i] || ''}
-                      onChange={e => setSelectedAnswers(a => ({ ...a, [i]: e.target.value }))}
-                      disabled={revealedAnswers[i]}
-                      placeholder="답변을 입력하세요..."
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      rows={2}
-                    />
-                  )}
-
-                  {!revealedAnswers[i] ? (
-                    <button
-                      onClick={() => setRevealedAnswers(r => ({ ...r, [i]: true }))}
-                      className="text-sm text-indigo-600 hover:underline"
-                    >
-                      정답 및 해설 보기
-                    </button>
-                  ) : (
-                    <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-sm space-y-1">
-                      <p className="font-medium text-blue-800">정답: {q.answer}</p>
-                      <p className="text-blue-700 dark:text-blue-400">{q.explanation}</p>
-                      <p className="text-blue-500 text-xs">{q.career_relevance}</p>
-                    </div>
-                  )}
-                </Card>
-              ))}
-            </>
-          ) : (
-            <Card>
-              <p className="text-center text-gray-500 py-8">진로 목표를 설정하면 예상 문제를 받을 수 있어요.</p>
-            </Card>
-          )}
-        </div>
-      )}
     </div>
   )
 }
