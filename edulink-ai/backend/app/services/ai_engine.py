@@ -1,10 +1,21 @@
-import re, json
+import re, json, time
 from fastapi import HTTPException
 import anthropic
 from app.core.config import settings
 from app.services.cache import get_cache, set_cache, make_cache_key, TTL
 
 client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+
+def _call_claude(model: str, max_tokens: int, messages: list, max_retries: int = 3) -> anthropic.types.Message:
+    """529 Overloaded 오류 시 지수 백오프로 재시도"""
+    for attempt in range(max_retries):
+        try:
+            return client.messages.create(model=model, max_tokens=max_tokens, messages=messages)
+        except anthropic.APIStatusError as e:
+            if e.status_code == 529 and attempt < max_retries - 1:
+                time.sleep(2 ** attempt)  # 1s → 2s → 4s
+                continue
+            raise
 
 def safe_parse_llm(text: str) -> dict:
     try:
@@ -54,7 +65,7 @@ async def generate_questions(subject: str, grade_level: str, topic: str,
 }}
 서술형의 경우 options=null, rubric에 채점 기준 명시."""
 
-    message = client.messages.create(
+    message = _call_claude(
         model="claude-opus-4-6",
         max_tokens=4096,
         messages=[{"role": "user", "content": prompt}]
@@ -86,7 +97,7 @@ async def grade_submission(question: str, model_answer: str, rubric: str,
 }}
 점수는 정수. 빈 답안이면 score=0."""
 
-    message = client.messages.create(
+    message = _call_claude(
         model="claude-opus-4-6",
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}]
