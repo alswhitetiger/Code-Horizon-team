@@ -18,7 +18,14 @@ export default function TakeAssessmentPage() {
 
   useEffect(() => {
     studentAPI.getAssessment(assessmentId)
-      .then(setAssessment)
+      .then((data) => {
+        // 이미 제출한 시험이면 결과 화면 표시
+        if (data?.alreadySubmitted) {
+          setResult({ score: data.myScore, feedback: data.myFeedback })
+          setSubmitted(true)
+        }
+        setAssessment(data)
+      })
       .catch((err) => {
         const msg = err?.response?.data?.detail || '시험 정보를 불러올 수 없습니다.'
         setError(msg)

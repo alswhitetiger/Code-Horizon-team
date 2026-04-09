@@ -67,16 +67,58 @@ async def create_assessment(body: AssessmentCreate, current_user: User = Depends
     await db.refresh(assessment)
     return {"id": assessment.id, "title": assessment.title, "courseId": assessment.course_id, "createdAt": assessment.created_at.isoformat()}
 
+@router.get("/submissions")
+async def get_all_submissions(current_user: User = Depends(require_role("teacher")), db: AsyncSession = Depends(get_db)):
+    """교사의 모든 강의에 속한 제출 답안 전체 조회"""
+    courses_result = await db.execute(select(Course).where(Course.teacher_id == current_user.id))
+    courses = courses_result.scalars().all()
+    if not courses:
+        return []
+    course_ids = [c.id for c in courses]
+    assessments_result = await db.execute(select(Assessment).where(Assessment.course_id.in_(course_ids)))
+    assessments = assessments_result.scalars().all()
+    if not assessments:
+        return []
+    assessment_ids = [a.id for a in assessments]
+    result = await db.execute(select(Submission).where(Submission.assessment_id.in_(assessment_ids)))
+    submissions = result.scalars().all()
+    # student_id 목록으로 한번에 조회 (N+1 방지)
+    student_ids = list({s.student_id for s in submissions})
+    students_result = await db.execute(select(User).where(User.id.in_(student_ids)))
+    students_map = {u.id: u for u in students_result.scalars().all()}
+    out = []
+    for s in submissions:
+        student = students_map.get(s.student_id)
+        out.append({
+            "id": s.id, "assessmentId": s.assessment_id,
+            "studentId": s.student_id, "studentName": student.name if student else "Unknown",
+            "answers": s.answers or {},
+            "aiScore": s.ai_score, "aiFeedback": s.ai_feedback,
+            "submittedAt": s.submitted_at.isoformat(),
+            "status": "채점완료" if s.ai_score is not None else "채점대기"
+        })
+    return out
+
+
 @router.get("/assessments/{assessment_id}/submissions")
 async def get_submissions(assessment_id: str, current_user: User = Depends(require_role("teacher")), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Submission).where(Submission.assessment_id == assessment_id))
     submissions = result.scalars().all()
+    # student_id 목록으로 한번에 조회 (N+1 방지)
+    student_ids = list({s.student_id for s in submissions})
+    students_result = await db.execute(select(User).where(User.id.in_(student_ids)))
+    students_map = {u.id: u for u in students_result.scalars().all()}
     out = []
     for s in submissions:
-        student = await db.get(User, s.student_id)
-        out.append({"id": s.id, "studentId": s.student_id, "studentName": student.name if student else "Unknown",
-                    "aiScore": s.ai_score, "aiFeedback": s.ai_feedback, "submittedAt": s.submitted_at.isoformat(),
-                    "status": "채점완료" if s.ai_score is not None else "채점대기"})
+        student = students_map.get(s.student_id)
+        out.append({
+            "id": s.id, "studentId": s.student_id,
+            "studentName": student.name if student else "Unknown",
+            "answers": s.answers or {},
+            "aiScore": s.ai_score, "aiFeedback": s.ai_feedback,
+            "submittedAt": s.submitted_at.isoformat(),
+            "status": "채점완료" if s.ai_score is not None else "채점대기"
+        })
     return out
 
 @router.get("/courses/{course_id}/students")

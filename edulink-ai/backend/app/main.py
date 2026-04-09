@@ -6,9 +6,14 @@ from app.routers import career
 
 app = FastAPI(title="EduLink AI API", version="1.0.0")
 
+# CORS: credentials 사용 시 특정 origin만 허용해야 함 (브라우저 spec)
+allowed_origins = [settings.FRONTEND_URL]
+if settings.FRONTEND_URL != "http://localhost:3000":
+    allowed_origins.append("http://localhost:3000")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

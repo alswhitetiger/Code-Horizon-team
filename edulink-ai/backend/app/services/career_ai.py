@@ -4,6 +4,7 @@ HuggingFace Inference API 기반 진로 AI 서비스
 """
 from huggingface_hub import InferenceClient
 from app.core.config import settings
+import asyncio
 import json
 import re
 
@@ -20,7 +21,8 @@ def _get_client() -> InferenceClient:
     return _client
 
 
-def _chat(messages: list[dict], max_tokens: int = 1500) -> str:
+def _chat_sync(messages: list[dict], max_tokens: int = 1500) -> str:
+    """동기 HTTP 호출 (asyncio.to_thread 로 실행)"""
     client = _get_client()
     response = client.chat_completion(
         messages=messages,
@@ -28,6 +30,14 @@ def _chat(messages: list[dict], max_tokens: int = 1500) -> str:
         temperature=0.7,
     )
     return response.choices[0].message.content.strip()
+
+
+async def _chat(messages: list[dict], max_tokens: int = 1500) -> str:
+    """비동기 래퍼 - 이벤트 루프 블로킹 방지"""
+    try:
+        return await asyncio.to_thread(_chat_sync, messages, max_tokens)
+    except Exception as e:
+        raise RuntimeError(f"HuggingFace API 호출 실패: {e}") from e
 
 
 CAREER_SYSTEM_PROMPT = """당신은 대한민국 학생들의 진로를 안내하는 전문 AI 상담사입니다.
@@ -55,9 +65,8 @@ async def get_career_guidance(career_name: str) -> dict:
 JSON만 반환하고 다른 텍스트는 포함하지 마세요."""
         }
     ]
-    raw = _chat(messages, max_tokens=1000)
-    # JSON 파싱 시도
     try:
+        raw = await _chat(messages, max_tokens=1000)
         match = re.search(r'\{.*\}', raw, re.DOTALL)
         if match:
             return json.loads(match.group())
@@ -65,13 +74,13 @@ JSON만 반환하고 다른 텍스트는 포함하지 마세요."""
         pass
     # 파싱 실패 시 기본 구조 반환
     return {
-        "overview": f"{career_name}은(는) 훌륭한 직업입니다.",
-        "required_skills": ["전문 지식", "문제 해결 능력", "소통 능력"],
-        "related_subjects": ["관련 과목을 열심히 공부하세요"],
+        "overview": f"{career_name}은(는) 전문성과 열정이 필요한 직업입니다.",
+        "required_skills": ["전문 지식", "문제 해결 능력", "소통 능력", "꾸준한 학습"],
+        "related_subjects": ["수학", "과학", "국어", "영어"],
         "related_majors": ["관련 학과 진학"],
         "certifications": [],
-        "roadmap": ["기초 학습", "전공 준비", "실무 경험 쌓기"],
-        "encouragement": f"{career_name}의 꿈을 향해 힘차게 나아가세요!"
+        "roadmap": ["기초 학습 (중학교)", "전공 탐색 및 준비 (고등학교)", "전문 교육 및 취업 (대학교)"],
+        "encouragement": f"{career_name}의 꿈을 향해 힘차게 나아가세요! 매일 조금씩 성장하면 반드시 이룰 수 있습니다."
     }
 
 
@@ -86,7 +95,10 @@ async def chat_about_career(career_name: str, history: list[dict], new_message: 
         messages.append({"role": msg["role"], "content": msg["content"]})
     messages.append({"role": "user", "content": new_message})
 
-    return _chat(messages, max_tokens=800)
+    try:
+        return await _chat(messages, max_tokens=800)
+    except Exception:
+        return "죄송합니다. 현재 AI 서비스에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요."
 
 
 async def generate_career_questions(career_name: str, subject: str | None, count: int) -> list[dict]:
@@ -111,8 +123,8 @@ async def generate_career_questions(career_name: str, subject: str | None, count
 JSON 배열만 반환하고 다른 텍스트는 포함하지 마세요."""
         }
     ]
-    raw = _chat(messages, max_tokens=2000)
     try:
+        raw = await _chat(messages, max_tokens=2000)
         match = re.search(r'\[.*\]', raw, re.DOTALL)
         if match:
             return json.loads(match.group())

@@ -7,8 +7,9 @@ from app.core.auth import hash_password, verify_password, create_access_token, g
 from app.core.config import settings
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
-import uuid, httpx
-from urllib.parse import urlencode
+import uuid
+import httpx
+from urllib.parse import urlencode, quote
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -43,7 +44,6 @@ async def _find_or_create_oauth_user(db: AsyncSession, email: str, name: str, pr
 
 def _oauth_redirect(user: User, is_new: bool = False) -> RedirectResponse:
     token = create_access_token({"sub": user.id, "role": user.role})
-    from urllib.parse import quote
     if is_new:
         return RedirectResponse(
             f"{settings.FRONTEND_URL}/callback?token={token}&role={user.role}&is_new=1&name={quote(user.name)}"

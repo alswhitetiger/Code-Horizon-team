@@ -124,7 +124,7 @@ export default function CareerPage() {
               else setTab(t.key)
             }}
             className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-              tab === t.key ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              tab === t.key ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             {t.label}
@@ -135,10 +135,10 @@ export default function CareerPage() {
       {/* 꿈 설정 탭 */}
       {tab === 'goal' && (
         <Card>
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">나의 꿈 설정</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">나의 꿈 설정</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">희망 직업 *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">희망 직업 *</label>
               <input
                 type="text"
                 value={careerName}
@@ -148,7 +148,7 @@ export default function CareerPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">이 직업을 꿈꾸는 이유</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">이 직업을 꿈꾸는 이유</label>
               <textarea
                 value={reason}
                 onChange={e => setReason(e.target.value)}
@@ -172,8 +172,8 @@ export default function CareerPage() {
           ) : guidance ? (
             <>
               <Card>
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">{savedCareer?.careerName} 란?</h2>
-                <p className="text-gray-600 text-sm">{guidance.overview}</p>
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{savedCareer?.careerName || '나의 진로'} 란?</h2>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">{guidance.overview}</p>
               </Card>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

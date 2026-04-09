@@ -110,26 +110,14 @@ function InviteModal({ courseId, courseTitle, onClose }: InviteModalProps) {
 
 export default function TeacherDashboard() {
   const [courses, setCourses] = useState<Course[]>([])
-  const [submissions, setSubmissions] = useState<Submission[]>([])
-  const [loading, setLoading] = useState(true)
+  const [submissions, setSubmissions] = useState<Submission[]>(mockSubmissions)
   const [inviteCourse, setInviteCourse] = useState<{ id: string; title: string } | null>(null)
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const c = await teacherAPI.getCourses()
-        setCourses(c)
-      } catch {
-        setCourses(mockCourses)
-      } finally {
-        setLoading(false)
-        setSubmissions(mockSubmissions)
-      }
-    }
-    load()
+    teacherAPI.getCourses()
+      .then(setCourses)
+      .catch(() => setCourses(mockCourses))
   }, [])
-
-  void loading
 
   return (
     <div className="space-y-8">

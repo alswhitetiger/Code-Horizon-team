@@ -33,15 +33,16 @@ async def get_assessment(assessment_id: str, current_user: User = Depends(requir
     sub_result = await db.execute(
         select(Submission).where(Submission.assessment_id == assessment_id, Submission.student_id == current_user.id)
     )
-    already_submitted = sub_result.scalar_one_or_none() is not None
-    if already_submitted:
-        raise HTTPException(status_code=400, detail="이미 제출한 시험입니다.")
+    existing_sub = sub_result.scalar_one_or_none()
     return {
         "id": assessment.id,
         "title": assessment.title,
         "courseId": assessment.course_id,
         "questions": assessment.questions or [],
         "createdAt": assessment.created_at.isoformat(),
+        "alreadySubmitted": existing_sub is not None,
+        "myScore": existing_sub.ai_score if existing_sub else None,
+        "myFeedback": existing_sub.ai_feedback if existing_sub else None,
     }
 
 @router.get("/courses/{course_id}/assessments")
