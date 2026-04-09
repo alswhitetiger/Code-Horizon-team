@@ -172,7 +172,9 @@ export default function TeacherDashboard() {
         <Link href="/teacher/questions">
           <Button>AI 문제 생성</Button>
         </Link>
-        <Button variant="secondary">채점 대기 {submissions.filter(s => s.status !== '채점완료').length}건</Button>
+        <Link href="/teacher/grading">
+          <Button variant="secondary">채점 대기 {submissions.filter(s => s.status !== '채점완료').length}건</Button>
+        </Link>
       </div>
 
       <Card>
