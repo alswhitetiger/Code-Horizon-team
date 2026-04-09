@@ -11,9 +11,14 @@ from app.models.submission import Submission
 from app.schemas.teacher import CourseCreate, QuestionGenerateRequest, AssessmentCreate, GradeRequest
 from app.services.ai_engine import generate_questions
 from app.services.assessment import auto_grade_submission
+from pydantic import BaseModel
 import uuid
 
 router = APIRouter(prefix="/api/teacher", tags=["teacher"])
+
+
+class InviteRequest(BaseModel):
+    email: str
 
 @router.get("/courses")
 async def get_courses(current_user: User = Depends(require_role("teacher")), db: AsyncSession = Depends(get_db)):
@@ -73,6 +78,55 @@ async def get_submissions(assessment_id: str, current_user: User = Depends(requi
                     "aiScore": s.ai_score, "aiFeedback": s.ai_feedback, "submittedAt": s.submitted_at.isoformat(),
                     "status": "채점완료" if s.ai_score is not None else "채점대기"})
     return out
+
+@router.get("/courses/{course_id}/students")
+async def get_course_students(course_id: str, current_user: User = Depends(require_role("teacher")), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(User).join(CourseEnrollment, CourseEnrollment.student_id == User.id)
+        .where(CourseEnrollment.course_id == course_id)
+    )
+    students = result.scalars().all()
+    return [{"id": s.id, "name": s.name, "email": s.email} for s in students]
+
+
+@router.post("/courses/{course_id}/invite")
+async def invite_student(course_id: str, body: InviteRequest, current_user: User = Depends(require_role("teacher")), db: AsyncSession = Depends(get_db)):
+    # 코스 소유권 확인
+    course = await db.get(Course, course_id)
+    if not course or course.teacher_id != current_user.id:
+        raise HTTPException(status_code=404, detail="강의를 찾을 수 없습니다.")
+    # 학생 조회
+    result = await db.execute(select(User).where(User.email == body.email))
+    student = result.scalar_one_or_none()
+    if not student:
+        raise HTTPException(status_code=404, detail="해당 이메일의 사용자가 없습니다.")
+    if student.role not in ("student",):
+        raise HTTPException(status_code=400, detail="학생 계정만 초대할 수 있습니다.")
+    # 이미 등록 여부 확인
+    existing = await db.scalar(
+        select(func.count(CourseEnrollment.id))
+        .where(CourseEnrollment.course_id == course_id, CourseEnrollment.student_id == student.id)
+    )
+    if existing:
+        raise HTTPException(status_code=400, detail="이미 등록된 학생입니다.")
+    enrollment = CourseEnrollment(id=str(uuid.uuid4()), course_id=course_id, student_id=student.id)
+    db.add(enrollment)
+    await db.commit()
+    return {"message": f"{student.name}({student.email}) 학생을 초대했습니다.", "student": {"id": student.id, "name": student.name, "email": student.email}}
+
+
+@router.delete("/courses/{course_id}/students/{student_id}")
+async def remove_student(course_id: str, student_id: str, current_user: User = Depends(require_role("teacher")), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(CourseEnrollment).where(CourseEnrollment.course_id == course_id, CourseEnrollment.student_id == student_id)
+    )
+    enrollment = result.scalar_one_or_none()
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="등록 정보를 찾을 수 없습니다.")
+    await db.delete(enrollment)
+    await db.commit()
+    return {"message": "학생을 제거했습니다."}
+
 
 @router.post("/submissions/{submission_id}/grade")
 async def grade_submission_endpoint(submission_id: str, body: GradeRequest, current_user: User = Depends(require_role("teacher")), db: AsyncSession = Depends(get_db)):

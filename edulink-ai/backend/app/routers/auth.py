@@ -13,25 +13,41 @@ from urllib.parse import urlencode
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-async def _find_or_create_oauth_user(db: AsyncSession, email: str, name: str, provider: str) -> User:
+from pydantic import BaseModel
+from typing import Optional
+
+class ProfileUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+
+
+async def _find_or_create_oauth_user(db: AsyncSession, email: str, name: str, provider: str):
+    """Returns (user, is_new)"""
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
+    is_new = False
     if not user:
+        is_new = True
         user = User(
             id=str(uuid.uuid4()),
             email=email,
-            password_hash=f"oauth:{provider}",  # 소셜 로그인 전용, 비밀번호 로그인 불가
+            password_hash=f"oauth:{provider}",
             name=name,
             role="student",
         )
         db.add(user)
         await db.commit()
         await db.refresh(user)
-    return user
+    return user, is_new
 
 
-def _oauth_redirect(user: User) -> RedirectResponse:
+def _oauth_redirect(user: User, is_new: bool = False) -> RedirectResponse:
     token = create_access_token({"sub": user.id, "role": user.role})
+    from urllib.parse import quote
+    if is_new:
+        return RedirectResponse(
+            f"{settings.FRONTEND_URL}/callback?token={token}&role={user.role}&is_new=1&name={quote(user.name)}"
+        )
     return RedirectResponse(
         f"{settings.FRONTEND_URL}/callback?token={token}&role={user.role}"
     )
@@ -71,6 +87,21 @@ async def me(current_user: User = Depends(get_current_user)):
             "name": current_user.name, "role": current_user.role}
 
 
+@router.patch("/profile")
+async def update_profile(body: ProfileUpdateRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """소셜 로그인 최초 가입 후 이름/역할 설정"""
+    if body.name:
+        current_user.name = body.name
+    if body.role:
+        if body.role not in ("student", "teacher"):
+            raise HTTPException(status_code=400, detail="유효하지 않은 역할입니다.")
+        current_user.role = body.role
+    await db.commit()
+    # 역할이 바뀌었으므로 새 토큰 발급
+    token = create_access_token({"sub": current_user.id, "role": current_user.role})
+    return {"access_token": token, "user": {"id": current_user.id, "email": current_user.email, "name": current_user.name, "role": current_user.role}}
+
+
 # ─── 카카오 OAuth ───────────────────────────────────────────────────────────────
 
 @router.get("/kakao")
@@ -106,8 +137,8 @@ async def kakao_callback(code: str = "", error: str = "", db: AsyncSession = Dep
         info = user_res.json()
     email = info.get("kakao_account", {}).get("email", f"kakao_{info['id']}@kakao.local")
     name = info.get("properties", {}).get("nickname", "카카오 사용자")
-    user = await _find_or_create_oauth_user(db, email, name, "kakao")
-    return _oauth_redirect(user)
+    user, is_new = await _find_or_create_oauth_user(db, email, name, "kakao")
+    return _oauth_redirect(user, is_new)
 
 
 # ─── 네이버 OAuth ───────────────────────────────────────────────────────────────
@@ -146,8 +177,8 @@ async def naver_callback(code: str = "", state: str = "", error: str = "", db: A
         info = user_res.json().get("response", {})
     email = info.get("email", f"naver_{info.get('id', uuid.uuid4())}@naver.local")
     name = info.get("name") or info.get("nickname", "네이버 사용자")
-    user = await _find_or_create_oauth_user(db, email, name, "naver")
-    return _oauth_redirect(user)
+    user, is_new = await _find_or_create_oauth_user(db, email, name, "naver")
+    return _oauth_redirect(user, is_new)
 
 
 # ─── 구글 OAuth ─────────────────────────────────────────────────────────────────
@@ -186,5 +217,5 @@ async def google_callback(code: str = "", error: str = "", db: AsyncSession = De
         info = user_res.json()
     email = info.get("email", f"google_{info.get('id')}@google.local")
     name = info.get("name", "구글 사용자")
-    user = await _find_or_create_oauth_user(db, email, name, "google")
-    return _oauth_redirect(user)
+    user, is_new = await _find_or_create_oauth_user(db, email, name, "google")
+    return _oauth_redirect(user, is_new)

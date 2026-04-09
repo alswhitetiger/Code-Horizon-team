@@ -27,18 +27,21 @@ export default function OAuthCallbackPage() {
     }
 
     if (token && role) {
-      // JWT에서 사용자 정보 파싱 (payload는 base64)
+      const isNew = params.get('is_new') === '1'
+      const name = params.get('name') || ''
+
+      // 토큰을 먼저 저장 (profile-setup에서 PATCH 호출 시 Authorization 헤더에 필요)
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))
-        setAuth(
-          { id: payload.sub, role, email: '', name: '' },
-          token
-        )
+        setAuth({ id: payload.sub, role, email: '', name: decodeURIComponent(name) }, token)
       } catch {
         setAuth({ id: '', role, email: '', name: '' }, token)
       }
 
-      if (role === 'teacher') router.replace('/teacher')
+      if (isNew) {
+        // 신규 소셜 가입 → 프로필 설정 페이지
+        router.replace(`/profile-setup?name=${encodeURIComponent(name)}`)
+      } else if (role === 'teacher') router.replace('/teacher')
       else if (role === 'admin') router.replace('/admin')
       else router.replace('/student')
     } else {

@@ -38,6 +38,8 @@ export const authAPI = {
   register: (email: string, password: string, name: string, role: string) =>
     api.post('/api/auth/register', { email, password, name, role }).then(r => r.data),
   me: () => api.get('/api/auth/me').then(r => r.data),
+  updateProfile: (name: string, role: string) =>
+    api.patch('/api/auth/profile', { name, role }).then(r => r.data),
 }
 
 // Teacher
@@ -46,6 +48,11 @@ export const teacherAPI = {
   createCourse: (data: { title: string; subject: string; gradeLevel?: string }) =>
     api.post('/api/teacher/courses', data).then(r => r.data),
   getCourseStats: (id: string) => api.get(`/api/teacher/courses/${id}/stats`).then(r => r.data),
+  getCourseStudents: (courseId: string) => api.get(`/api/teacher/courses/${courseId}/students`).then(r => r.data),
+  inviteStudent: (courseId: string, email: string) =>
+    api.post(`/api/teacher/courses/${courseId}/invite`, { email }).then(r => r.data),
+  removeStudent: (courseId: string, studentId: string) =>
+    api.delete(`/api/teacher/courses/${courseId}/students/${studentId}`).then(r => r.data),
   generateQuestions: (data: object) =>
     api.post('/api/teacher/questions/generate', data).then(r => r.data),
   createAssessment: (data: object) =>
@@ -78,6 +85,12 @@ export const adminAPI = {
     api.get(`/api/admin/report?period=${period}${courseId ? `&course_id=${courseId}` : ''}`).then(r => r.data),
   getCourses: () => api.get('/api/admin/courses').then(r => r.data),
   getStudents: () => api.get('/api/admin/students').then(r => r.data),
+  getUsers: (role?: string) => api.get(`/api/admin/users${role ? `?role=${role}` : ''}`).then(r => r.data),
+  createUser: (data: { name: string; email: string; password: string; role: string }) =>
+    api.post('/api/admin/users', data).then(r => r.data),
+  updateUser: (userId: string, data: { name?: string; role?: string }) =>
+    api.patch(`/api/admin/users/${userId}`, data).then(r => r.data),
+  deleteUser: (userId: string) => api.delete(`/api/admin/users/${userId}`).then(r => r.data),
 }
 
 // Career
