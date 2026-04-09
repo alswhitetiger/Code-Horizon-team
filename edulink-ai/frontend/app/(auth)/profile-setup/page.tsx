@@ -1,11 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { authAPI } from '@/lib/api'
 import { useAuthStore } from '@/store/auth.store'
 import { User } from '@/types'
 
-export default function ProfileSetupPage() {
+function ProfileSetupContent() {
   const params = useSearchParams()
   const router = useRouter()
   const { setAuth } = useAuthStore()
@@ -96,5 +96,17 @@ export default function ProfileSetupPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function ProfileSetupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ProfileSetupContent />
+    </Suspense>
   )
 }

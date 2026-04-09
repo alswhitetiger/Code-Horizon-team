@@ -1,16 +1,17 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
+import { Role } from '@/types'
 
-export default function OAuthCallbackPage() {
+function OAuthCallbackContent() {
   const router = useRouter()
   const params = useSearchParams()
   const { setAuth } = useAuthStore()
 
   useEffect(() => {
     const token = params.get('token')
-    const role = params.get('role')
+    const roleRaw = params.get('role')
     const error = params.get('error')
 
     if (error) {
@@ -26,11 +27,13 @@ export default function OAuthCallbackPage() {
       return
     }
 
-    if (token && role) {
+    const validRoles: Role[] = ['teacher', 'student', 'admin']
+    const role = validRoles.includes(roleRaw as Role) ? (roleRaw as Role) : 'student'
+
+    if (token && roleRaw) {
       const isNew = params.get('is_new') === '1'
       const name = params.get('name') || ''
 
-      // 토큰을 먼저 저장 (profile-setup에서 PATCH 호출 시 Authorization 헤더에 필요)
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))
         setAuth({ id: payload.sub, role, email: '', name: decodeURIComponent(name) }, token)
@@ -39,7 +42,6 @@ export default function OAuthCallbackPage() {
       }
 
       if (isNew) {
-        // 신규 소셜 가입 → 프로필 설정 페이지
         router.replace(`/profile-setup?name=${encodeURIComponent(name)}`)
       } else if (role === 'teacher') router.replace('/teacher')
       else if (role === 'admin') router.replace('/admin')
@@ -56,5 +58,17 @@ export default function OAuthCallbackPage() {
         <p className="text-gray-600 dark:text-gray-400">로그인 처리 중...</p>
       </div>
     </div>
+  )
+}
+
+export default function OAuthCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <OAuthCallbackContent />
+    </Suspense>
   )
 }
