@@ -11,6 +11,7 @@ from app.models.submission import Submission
 from app.schemas.teacher import CourseCreate, QuestionGenerateRequest, AssessmentCreate, GradeRequest
 from app.services.ai_engine import generate_questions
 from app.services.assessment import auto_grade_submission
+from app.services.question_bank import get_questions_from_bank
 from pydantic import BaseModel
 import uuid
 
@@ -56,8 +57,22 @@ async def course_stats(course_id: str, current_user: User = Depends(require_role
 
 @router.post("/questions/generate")
 async def generate_questions_endpoint(body: QuestionGenerateRequest, current_user: User = Depends(require_role("teacher")), db: AsyncSession = Depends(get_db)):
-    result = await generate_questions(body.subject, body.grade_level, body.topic, body.question_type, body.difficulty, body.count)
-    return result
+    # 1순위: 문제 은행에서 조회
+    bank_questions = await get_questions_from_bank(
+        db, body.subject, body.grade_level, body.topic,
+        body.question_type, body.difficulty, body.count
+    )
+    if len(bank_questions) >= body.count:
+        return {"questions": bank_questions, "source": "bank"}
+
+    # 2순위: 문제 은행에 부족하면 AI로 생성 (부족분만큼)
+    needed = body.count - len(bank_questions)
+    ai_result = await generate_questions(
+        body.subject, body.grade_level, body.topic,
+        body.question_type, body.difficulty, needed
+    )
+    combined = bank_questions + (ai_result.get("questions") or [])
+    return {"questions": combined, "source": "mixed" if bank_questions else "ai"}
 
 @router.post("/assessments")
 async def create_assessment(body: AssessmentCreate, current_user: User = Depends(require_role("teacher")), db: AsyncSession = Depends(get_db)):
