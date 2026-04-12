@@ -1,5 +1,10 @@
 import asyncio
+import sys
 from logging.config import fileConfig
+
+# Windows에서 asyncpg 연결 오류 방지
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
