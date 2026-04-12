@@ -149,6 +149,10 @@ export const adminAPI = {
   updateUser: (userId: string, data: { name?: string; role?: string }) =>
     api.patch(`/api/admin/users/${userId}`, data).then(r => r.data),
   deleteUser: (userId: string) => api.delete(`/api/admin/users/${userId}`).then(r => r.data),
+  getTeacherCourses: (teacherId: string) =>
+    api.get(`/api/admin/teachers/${teacherId}/courses`).then(r => r.data),
+  createCourseForTeacher: (teacherId: string, data: { title: string; subject: string; grade_level?: string }) =>
+    api.post(`/api/admin/teachers/${teacherId}/courses`, data).then(r => r.data),
 }
 
 // Career

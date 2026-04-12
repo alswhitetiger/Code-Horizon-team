@@ -57,46 +57,52 @@ function InviteModal({ courseId, courseTitle, onClose }: InviteModalProps) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">학생 초대</h2>
+        <div className="flex justify-between items-center mb-1">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">학생 관리</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl">✕</button>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{courseTitle}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{courseTitle}</p>
 
-        <form onSubmit={handleInvite} className="flex gap-2 mb-4">
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="학생 이메일 입력"
-            className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            required
-          />
-          <Button type="submit" disabled={loading}>
-            {loading ? '...' : '초대'}
-          </Button>
-        </form>
+        {/* 학생 추가 */}
+        <div className="mb-5 p-4 bg-gray-50 dark:bg-gray-700/40 rounded-xl">
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">학생 추가</p>
+          <form onSubmit={handleInvite} className="flex gap-2">
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="학생 이메일 입력"
+              className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+            <Button type="submit" disabled={loading}>
+              {loading ? '...' : '추가'}
+            </Button>
+          </form>
+          {message && <p className="text-green-600 dark:text-green-400 text-xs mt-2">{message}</p>}
+          {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+        </div>
 
-        {message && <p className="text-green-600 text-sm mb-3">{message}</p>}
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-
+        {/* 학생 목록 */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">등록된 학생 ({students.length}명)</h3>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            등록된 학생 ({students.length}명)
+          </h3>
           {students.length === 0 ? (
             <p className="text-sm text-gray-400 py-4 text-center">아직 등록된 학생이 없습니다.</p>
           ) : (
-            <ul className="space-y-2 max-h-48 overflow-y-auto">
+            <ul className="space-y-2 max-h-52 overflow-y-auto">
               {students.map(s => (
-                <li key={s.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <li key={s.id} className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <div>
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{s.name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{s.email}</p>
                   </div>
                   <button
                     onClick={() => handleRemove(s.id, s.name)}
-                    className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400"
+                    className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium"
                   >
-                    제거
+                    삭제
                   </button>
                 </li>
               ))}
@@ -138,19 +144,16 @@ export default function TeacherDashboard() {
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">내 강의 ({courses.length})</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {courses.map(c => (
-            <Card key={c.id} className="hover:shadow-md transition-shadow">
+            <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInviteCourse({ id: c.id, title: c.title })}>
               <div className="flex justify-between items-start mb-3">
                 <span className="text-xs font-medium bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full">{c.subject}</span>
                 <span className="text-xs text-gray-400 dark:text-gray-500">{c.gradeLevel}</span>
               </div>
               <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{c.title}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">학생 {c.studentCount || 0}명</p>
-              <button
-                onClick={() => setInviteCourse({ id: c.id, title: c.title })}
-                className="w-full text-sm text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700 rounded-lg py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
-              >
-                + 학생 초대
-              </button>
+              <div className="w-full text-sm text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700 rounded-lg py-1.5 text-center hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors">
+                학생 관리
+              </div>
             </Card>
           ))}
         </div>
