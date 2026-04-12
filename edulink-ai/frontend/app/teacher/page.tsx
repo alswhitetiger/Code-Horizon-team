@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button'
 import SubmissionList from '@/components/teacher/SubmissionList'
 import { mockCourses, mockSubmissions } from '@/lib/mock-data'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface Student { id: string; name: string; email: string }
 
@@ -115,9 +116,11 @@ function InviteModal({ courseId, courseTitle, onClose }: InviteModalProps) {
 }
 
 export default function TeacherDashboard() {
+  const router = useRouter()
   const [courses, setCourses] = useState<Course[]>([])
   const [submissions, setSubmissions] = useState<Submission[]>(mockSubmissions)
   const [inviteCourse, setInviteCourse] = useState<{ id: string; title: string } | null>(null)
+  const pendingCount = submissions.filter(s => (s.status || '채점대기') === '채점대기').length
 
   useEffect(() => {
     teacherAPI.getCourses()
@@ -144,32 +147,46 @@ export default function TeacherDashboard() {
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">내 강의 ({courses.length})</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {courses.map(c => (
-            <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInviteCourse({ id: c.id, title: c.title })}>
+            <Card key={c.id} className="hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start mb-3">
                 <span className="text-xs font-medium bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full">{c.subject}</span>
                 <span className="text-xs text-gray-400 dark:text-gray-500">{c.gradeLevel}</span>
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{c.title}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">학생 {c.studentCount || 0}명</p>
-              <div className="w-full text-sm text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700 rounded-lg py-1.5 text-center hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors">
-                학생 관리
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">{c.title}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">학생 {c.studentCount || 0}명</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setInviteCourse({ id: c.id, title: c.title })}
+                  className="flex-1 text-sm text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700 rounded-lg py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                >
+                  학생 관리
+                </button>
+                <button
+                  onClick={() => router.push(`/teacher/questions?courseId=${c.id}&subject=${encodeURIComponent(c.subject)}&grade=${encodeURIComponent(c.gradeLevel || '중1')}`)}
+                  className="flex-1 text-sm text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700 rounded-lg py-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors"
+                >
+                  AI 문제 생성
+                </button>
               </div>
             </Card>
           ))}
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <Link href="/teacher/questions">
-          <Button>AI 문제 생성</Button>
-        </Link>
-        <Link href="/teacher/grading">
-          <Button variant="secondary">채점 대기 {submissions.filter(s => s.status !== '채점완료').length}건</Button>
-        </Link>
-      </div>
-
       <Card>
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">최근 제출 현황</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">최근 제출 현황</h2>
+          <Link href="/teacher/grading">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700 rounded-lg text-xs font-medium hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer">
+              채점 대기
+              {pendingCount > 0 && (
+                <span className="bg-amber-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                  {pendingCount}
+                </span>
+              )}
+            </span>
+          </Link>
+        </div>
         <SubmissionList submissions={submissions} />
       </Card>
     </div>
