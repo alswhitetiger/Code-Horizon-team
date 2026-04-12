@@ -1,5 +1,10 @@
 import asyncio
+import sys
 from logging.config import fileConfig
+
+# Windows에서 asyncpg 연결 오류 방지
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
@@ -18,7 +23,7 @@ if config.config_file_name is not None:
 
 # Import all models so that Base has them registered
 from app.core.database import Base
-from app.models import User, Course, CourseEnrollment, Assessment, Submission, LearningLog  # noqa: F401
+from app.models import User, Course, CourseEnrollment, Assessment, Submission, LearningLog, CareerGoal  # noqa: F401
 
 # add your model's MetaData object here for 'autogenerate' support
 target_metadata = Base.metadata

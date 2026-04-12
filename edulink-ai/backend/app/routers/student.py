@@ -24,6 +24,27 @@ async def get_courses(current_user: User = Depends(require_role("student")), db:
     courses = result.scalars().all()
     return [{"id": c.id, "title": c.title, "subject": c.subject, "gradeLevel": c.grade_level, "createdAt": c.created_at.isoformat()} for c in courses]
 
+@router.get("/assessments/{assessment_id}")
+async def get_assessment(assessment_id: str, current_user: User = Depends(require_role("student")), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Assessment).where(Assessment.id == assessment_id))
+    assessment = result.scalar_one_or_none()
+    if not assessment:
+        raise HTTPException(status_code=404, detail="시험을 찾을 수 없습니다.")
+    sub_result = await db.execute(
+        select(Submission).where(Submission.assessment_id == assessment_id, Submission.student_id == current_user.id)
+    )
+    existing_sub = sub_result.scalar_one_or_none()
+    return {
+        "id": assessment.id,
+        "title": assessment.title,
+        "courseId": assessment.course_id,
+        "questions": assessment.questions or [],
+        "createdAt": assessment.created_at.isoformat(),
+        "alreadySubmitted": existing_sub is not None,
+        "myScore": existing_sub.ai_score if existing_sub else None,
+        "myFeedback": existing_sub.ai_feedback if existing_sub else None,
+    }
+
 @router.get("/courses/{course_id}/assessments")
 async def get_assessments(course_id: str, current_user: User = Depends(require_role("student")), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Assessment).where(Assessment.course_id == course_id))

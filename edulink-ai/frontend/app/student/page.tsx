@@ -32,8 +32,8 @@ export default function StudentHome() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">학습 홈</h1>
-        <p className="text-gray-500 text-sm">오늘도 꾸준히 학습해요!</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">학습 홈</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">오늘도 꾸준히 학습해요!</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -44,18 +44,18 @@ export default function StudentHome() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">AI 맞춤 추천</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">AI 맞춤 추천</h2>
         <RecommendList recommendations={recommendations} />
       </div>
 
       <Card>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">진행 중인 강의</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">진행 중인 강의</h2>
         <div className="space-y-3">
           {courses.map(c => (
-            <div key={c.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+            <div key={c.id} className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
               <div>
-                <p className="font-medium text-gray-900">{c.title}</p>
-                <p className="text-sm text-gray-500">{c.subject} · {c.gradeLevel}</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{c.title}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{c.subject} · {c.gradeLevel}</p>
               </div>
               <Link href={`/student/assessments/${c.id}`}>
                 <button className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">시험 보기 →</button>
