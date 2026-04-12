@@ -344,7 +344,6 @@ export default function AdminDashboard() {
             <p className="text-center text-gray-400 py-8">사용자가 없습니다.</p>
           ) : (
             <>
-              {/* 데스크톱 테이블 */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -386,7 +385,6 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
-              {/* 모바일 카드 */}
               <div className="sm:hidden space-y-3">
                 {filteredUsers.map(u => (
                   <div key={u.id} className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-700 rounded-lg">
