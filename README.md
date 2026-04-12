@@ -198,6 +198,23 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ---
 
+## 데모 계정
+
+서버 실행 후 `seed.py`를 실행하면 아래 테스트 계정이 생성됩니다.
+
+```bash
+# 백엔드 디렉토리에서 실행
+python seed.py
+```
+
+| 역할 | 이메일 | 비밀번호 |
+|------|--------|----------|
+| 교사 | teacher@demo.com | demo1234 |
+| 학생 | student@demo.com | demo1234 |
+| 관리자 | admin@demo.com | demo1234 |
+
+---
+
 ## 화면 구성
 
 | 경로 | 접근 | 설명 |
