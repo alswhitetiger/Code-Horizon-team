@@ -4,6 +4,7 @@ import { authAPI } from '@/lib/api'
 import { useAuthStore } from '@/store/auth.store'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { User } from '@/types'
+import Image from 'next/image'
 import ThemeToggle from '@/components/ui/ThemeToggle'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -80,8 +81,8 @@ function LoginContent() {
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md">
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">EduLink AI</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">AI 기반 교육 플랫폼</p>
+          <Image src="/logo.png" alt="EDU Simplete" width={200} height={67} className="h-16 w-auto object-contain mx-auto" priority />
+          <p className="text-gray-500 dark:text-gray-400 mt-2">AI 기반 교육 플랫폼</p>
         </div>
 
         {/* 로그인 / 회원가입 탭 */}

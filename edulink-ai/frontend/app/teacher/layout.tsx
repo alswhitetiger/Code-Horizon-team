@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import Link from 'next/link'
+import Image from 'next/image'
 import { logout } from '@/lib/auth'
 import ThemeToggle from '@/components/ui/ThemeToggle'
 
@@ -32,7 +33,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <span className="font-bold text-indigo-600 dark:text-indigo-400 text-lg">EduLink AI</span>
+            <Image src="/logo.png" alt="EDU Simplete" width={130} height={44} className="h-10 w-auto object-contain" priority />
             <div className="hidden sm:flex items-center gap-5">
               {NAV_LINKS.map(l => (
                 <Link key={l.href} href={l.href}
