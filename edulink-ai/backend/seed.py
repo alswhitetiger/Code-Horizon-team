@@ -13,8 +13,12 @@ Also creates sample courses, assessments, enrollments, and submissions.
 """
 
 import asyncio
+import sys
 import uuid
 from datetime import datetime, timezone, timedelta
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy import select

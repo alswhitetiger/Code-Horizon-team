@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.core.database import get_db
 from app.core.auth import require_role, hash_password
 from app.models.user import User
-from app.models.course import Course
+from app.models.course import Course, CourseEnrollment
 from app.services.analytics import get_dashboard_metrics, get_at_risk_students, generate_report
 from pydantic import BaseModel
 from typing import Optional
@@ -23,6 +23,12 @@ class CreateUserRequest(BaseModel):
 class UpdateUserRequest(BaseModel):
     name: Optional[str] = None
     role: Optional[str] = None
+
+
+class CreateCourseForTeacherRequest(BaseModel):
+    title: str
+    subject: str
+    grade_level: Optional[str] = None
 
 @router.get("/dashboard")
 async def dashboard(current_user: User = Depends(require_role("admin")), db: AsyncSession = Depends(get_db)):
@@ -104,3 +110,62 @@ async def delete_user(user_id: str, current_user: User = Depends(require_role("a
     await db.delete(user)
     await db.commit()
     return {"message": "사용자를 삭제했습니다."}
+
+
+# ── 교사별 강의 관리 ────────────────────────────────────────────────────────
+
+@router.get("/teachers/{teacher_id}/courses")
+async def get_teacher_courses(
+    teacher_id: str,
+    current_user: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    teacher = await db.get(User, teacher_id)
+    if not teacher or teacher.role != "teacher":
+        raise HTTPException(status_code=404, detail="교사를 찾을 수 없습니다.")
+    result = await db.execute(select(Course).where(Course.teacher_id == teacher_id))
+    courses = result.scalars().all()
+    out = []
+    for c in courses:
+        count = await db.scalar(
+            select(func.count(CourseEnrollment.id)).where(CourseEnrollment.course_id == c.id)
+        ) or 0
+        out.append({
+            "id": c.id,
+            "title": c.title,
+            "subject": c.subject,
+            "gradeLevel": c.grade_level,
+            "studentCount": count,
+            "createdAt": c.created_at.isoformat(),
+        })
+    return out
+
+
+@router.post("/teachers/{teacher_id}/courses")
+async def create_course_for_teacher(
+    teacher_id: str,
+    body: CreateCourseForTeacherRequest,
+    current_user: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    teacher = await db.get(User, teacher_id)
+    if not teacher or teacher.role != "teacher":
+        raise HTTPException(status_code=404, detail="교사를 찾을 수 없습니다.")
+    course = Course(
+        id=str(uuid.uuid4()),
+        teacher_id=teacher_id,
+        title=body.title,
+        subject=body.subject,
+        grade_level=body.grade_level,
+    )
+    db.add(course)
+    await db.commit()
+    await db.refresh(course)
+    return {
+        "id": course.id,
+        "title": course.title,
+        "subject": course.subject,
+        "gradeLevel": course.grade_level,
+        "studentCount": 0,
+        "createdAt": course.created_at.isoformat(),
+    }

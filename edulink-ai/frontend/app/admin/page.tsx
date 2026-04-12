@@ -9,6 +9,8 @@ import ReportGenerator from '@/components/admin/ReportGenerator'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { mockDashboard, mockAtRisk } from '@/lib/mock-data'
 
+interface CourseItem { id: string; title: string; subject: string; gradeLevel: string; studentCount: number; createdAt: string }
+
 const weeklyData = [
   { date: '월', active: 40, submissions: 15 },
   { date: '화', active: 52, submissions: 22 },
@@ -101,6 +103,116 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
   )
 }
 
+const SUBJECT_OPTIONS = ['수학', '영어', '국어', '과학탐구', '사회탐구', '물리', '화학', '생명과학', '지구과학', '한국사', '기타']
+const GRADE_OPTIONS = ['중1', '중2', '중3', '고1', '고2', '고3']
+
+function TeacherCoursesModal({ teacher, onClose }: { teacher: UserItem; onClose: () => void }) {
+  const [courses, setCourses] = useState<CourseItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [form, setForm] = useState({ title: '', subject: '수학', grade_level: '중1' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    adminAPI.getTeacherCourses(teacher.id)
+      .then(setCourses)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [teacher.id])
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form.title.trim()) { setError('강의명을 입력하세요.'); return }
+    setError(''); setSaving(true)
+    try {
+      const created = await adminAPI.createCourseForTeacher(teacher.id, form)
+      setCourses(prev => [created, ...prev])
+      setForm(f => ({ ...f, title: '' }))
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { detail?: string } } }
+      setError(axiosErr?.response?.data?.detail || '강의 추가에 실패했습니다.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center mb-1">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">강의 관리</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl">✕</button>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+          <span className="font-medium text-gray-700 dark:text-gray-300">{teacher.name}</span> 교사 · {teacher.email}
+        </p>
+
+        {/* 강의 추가 폼 */}
+        <form onSubmit={handleAdd} className="space-y-3 mb-5 p-4 bg-gray-50 dark:bg-gray-700/40 rounded-xl">
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">새 강의 추가</p>
+          <input
+            type="text"
+            value={form.title}
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+            placeholder="강의명 (예: 중1 수학 기초반)"
+            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <div className="flex gap-2">
+            <select
+              value={form.subject}
+              onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
+              className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {SUBJECT_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select
+              value={form.grade_level}
+              onChange={e => setForm(f => ({ ...f, grade_level: e.target.value }))}
+              className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {GRADE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+          </div>
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          >
+            {saving ? '추가 중...' : '+ 강의 추가'}
+          </button>
+        </form>
+
+        {/* 강의 목록 */}
+        <div className="flex-1 overflow-y-auto">
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            등록된 강의 ({courses.length}개)
+          </p>
+          {loading ? (
+            <p className="text-sm text-gray-400 text-center py-6">불러오는 중...</p>
+          ) : courses.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">등록된 강의가 없습니다.</p>
+          ) : (
+            <ul className="space-y-2">
+              {courses.map(c => (
+                <li key={c.id} className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-700 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{c.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {c.subject} · {c.gradeLevel} · 학생 {c.studentCount}명
+                    </p>
+                  </div>
+                  <span className="text-xs text-gray-400">{c.createdAt.slice(0, 10)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>('dashboard')
   const [metrics, setMetrics] = useState<DashboardMetrics>(mockDashboard)
@@ -109,6 +221,7 @@ export default function AdminDashboard() {
   const [userFilter, setUserFilter] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [usersLoaded, setUsersLoaded] = useState(false)
+  const [selectedTeacher, setSelectedTeacher] = useState<UserItem | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -147,6 +260,12 @@ export default function AdminDashboard() {
         <AddUserModal
           onClose={() => setShowAddModal(false)}
           onCreated={u => setUsers(prev => [u, ...prev])}
+        />
+      )}
+      {selectedTeacher && (
+        <TeacherCoursesModal
+          teacher={selectedTeacher}
+          onClose={() => setSelectedTeacher(null)}
         />
       )}
 
@@ -225,7 +344,6 @@ export default function AdminDashboard() {
             <p className="text-center text-gray-400 py-8">사용자가 없습니다.</p>
           ) : (
             <>
-              {/* 데스크톱 테이블 */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -248,7 +366,15 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="py-3 px-2 text-gray-400 dark:text-gray-500">{u.createdAt.slice(0, 10)}</td>
-                        <td className="py-3 px-2 text-right">
+                        <td className="py-3 px-2 text-right flex items-center justify-end gap-3">
+                          {u.role === 'teacher' && (
+                            <button
+                              onClick={() => setSelectedTeacher(u)}
+                              className="text-xs text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-400 font-medium"
+                            >
+                              강의 관리
+                            </button>
+                          )}
                           <button onClick={() => handleDeleteUser(u.id, u.name)}
                             className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400">
                             삭제
@@ -259,7 +385,6 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
-              {/* 모바일 카드 */}
               <div className="sm:hidden space-y-3">
                 {filteredUsers.map(u => (
                   <div key={u.id} className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-700 rounded-lg">
@@ -270,10 +395,18 @@ export default function AdminDashboard() {
                         {ROLE_LABELS[u.role]}
                       </span>
                     </div>
-                    <button onClick={() => handleDeleteUser(u.id, u.name)}
-                      className="text-xs text-red-500 hover:text-red-700">
-                      삭제
-                    </button>
+                    <div className="flex flex-col items-end gap-2">
+                      {u.role === 'teacher' && (
+                        <button onClick={() => setSelectedTeacher(u)}
+                          className="text-xs text-indigo-500 hover:text-indigo-700 font-medium">
+                          강의 관리
+                        </button>
+                      )}
+                      <button onClick={() => handleDeleteUser(u.id, u.name)}
+                        className="text-xs text-red-500 hover:text-red-700">
+                        삭제
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

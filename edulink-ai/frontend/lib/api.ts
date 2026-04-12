@@ -26,7 +26,6 @@ export const authAPI = {
       return await api.post('/api/auth/login', { email, password }).then(r => r.data)
     } catch (err: unknown) {
       const axiosErr = err as { response?: object; code?: string }
-      // Backend unreachable → use demo mock accounts
       if (!axiosErr.response && password === 'demo1234' && DEMO_ACCOUNTS[email]) {
         return {
           access_token: `demo-token-${email}`,
@@ -57,7 +56,6 @@ export const teacherAPI = {
   generateQuestions: async (data: Record<string, unknown>) => {
     try { return await api.post('/api/teacher/questions/generate', data).then(r => r.data) }
     catch {
-      // Mock question generation fallback
       const subject = String(data.subject || '수학')
       const topic = String(data.topic || '기본 개념')
       const type = String(data.question_type || '객관식')
@@ -67,18 +65,13 @@ export const teacherAPI = {
         if (type === '객관식') return {
           id: `gen-${Date.now()}-${i}`, type: '객관식' as const,
           content: `[${subject}] ${topic} 관련 객관식 문제 ${i + 1}: 다음 중 올바른 것은?`,
-          options: ['① 보기 1번', '② 보기 2번', '③ 보기 3번', '④ 보기 4번'],
-          answer: '② 보기 2번', explanation: `${topic}의 핵심 개념을 확인하는 문제입니다.`, difficulty
+          options: ['① 보기 1', '② 보기 2', '③ 보기 3', '④ 보기 4'],
+          answer: '② 보기 2', explanation: `${topic}의 핵심 개념을 확인하는 문제입니다.`, difficulty
         }
-        if (type === '단답형') return {
+        return {
           id: `gen-${Date.now()}-${i}`, type: '단답형' as const,
           content: `[${subject}] ${topic}의 핵심 용어를 쓰시오. (문제 ${i + 1})`,
           options: undefined, answer: `${topic} 핵심 답안`, explanation: `${topic}의 주요 개념어입니다.`, difficulty
-        }
-        return {
-          id: `gen-${Date.now()}-${i}`, type: '서술형' as const,
-          content: `[${subject}] ${topic}에 대해 설명하시오. (문제 ${i + 1})`,
-          options: undefined, answer: `${topic}에 대한 모범 답안입니다.`, explanation: `${topic}의 심화 이해를 확인합니다.`, difficulty
         }
       })
       return { questions }
@@ -100,6 +93,13 @@ export const teacherAPI = {
     try { return await api.post(`/api/teacher/submissions/${submissionId}/grade`, data).then(r => r.data) }
     catch { return { success: true } }
   },
+  getCourseVideos: (courseId: string) => api.get(`/api/teacher/courses/${courseId}/videos`).then(r => r.data),
+  uploadVideo: (courseId: string, formData: FormData) =>
+    api.post(`/api/teacher/courses/${courseId}/videos`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(r => r.data),
+  deleteVideo: (videoId: string) => api.delete(`/api/teacher/videos/${videoId}`).then(r => r.data),
+  getVideoProgress: (videoId: string) => api.get(`/api/teacher/videos/${videoId}/progress`).then(r => r.data),
 }
 
 // Student
@@ -133,6 +133,9 @@ export const studentAPI = {
     catch { return mockRecommendations }
   },
   logEvent: (data: object) => api.post('/api/student/logs', data).then(r => r.data).catch(() => {}),
+  getCourseVideos: (courseId: string) => api.get(`/api/student/courses/${courseId}/videos`).then(r => r.data),
+  updateVideoProgress: (videoId: string, data: { watched_seconds: number; total_seconds: number; completed: boolean }) =>
+    api.put(`/api/student/videos/${videoId}/progress`, data).then(r => r.data),
 }
 
 // Admin
@@ -149,6 +152,10 @@ export const adminAPI = {
   updateUser: (userId: string, data: { name?: string; role?: string }) =>
     api.patch(`/api/admin/users/${userId}`, data).then(r => r.data),
   deleteUser: (userId: string) => api.delete(`/api/admin/users/${userId}`).then(r => r.data),
+  getTeacherCourses: (teacherId: string) =>
+    api.get(`/api/admin/teachers/${teacherId}/courses`).then(r => r.data),
+  createCourseForTeacher: (teacherId: string, data: { title: string; subject: string; grade_level?: string }) =>
+    api.post(`/api/admin/teachers/${teacherId}/courses`, data).then(r => r.data),
 }
 
 // Career
@@ -161,7 +168,6 @@ export const careerAPI = {
     api.post('/api/career/chat', { message, history }).then(r => r.data),
   getQuestions: (career_name: string, subject?: string, count = 5) =>
     api.post('/api/career/questions', { career_name, subject, count }).then(r => r.data),
-  // 교사용
   getStudentsCareers: () => api.get('/api/career/teacher/students').then(r => r.data),
   teacherGenerateQuestions: (career_name: string, subject?: string, count = 5) =>
     api.post('/api/career/teacher/questions', { career_name, subject, count }).then(r => r.data),

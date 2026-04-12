@@ -4,3 +4,5 @@ from app.models.assessment import Assessment
 from app.models.submission import Submission
 from app.models.learning_log import LearningLog
 from app.models.career import CareerGoal
+from app.models.question_bank import QuestionBank
+from app.models.video import CourseVideo, VideoProgress
