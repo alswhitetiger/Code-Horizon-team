@@ -362,9 +362,9 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 **Code Horizon Team** - 2024
 
 - [김민균](https://github.com/alswhitetiger)
-- [조세희](https://github.com/GitHub아이디입력)
-- [양정민](https://github.com/GitHub아이디입력)
-- [신승철](https://github.com/GitHub아이디입력)
+- [조세희](https://github.com/SEHEE-8546)
+- [양정민](https://github.com/Yangmin)
+- [신승철](https://github.com/ssshinnpson)
 
 ---
 
