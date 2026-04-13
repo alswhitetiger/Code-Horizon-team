@@ -402,8 +402,3 @@ Windows에서 `localhost`는 IPv6(`::1`)로 연결을 시도할 수 있습니다
 - [양정민](https://github.com/Yangmin3)
 - [신승철](https://github.com/ssshinnpson)
 
----
-
-## 라이선스
-
-MIT License
