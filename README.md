@@ -363,7 +363,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 - [김민균](https://github.com/alswhitetiger)
 - [조세희](https://github.com/SEHEE-8546)
-- [양정민](https://github.com/Yangmin)
+- [양정민](https://github.com/Yangmin3)
 - [신승철](https://github.com/ssshinnpson)
 
 ---
