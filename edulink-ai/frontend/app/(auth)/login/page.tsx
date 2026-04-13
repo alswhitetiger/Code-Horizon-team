@@ -9,7 +9,7 @@ import ThemeToggle from '@/components/ui/ThemeToggle'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-type Mode = 'login' | 'register'
+type Mode = 'login' | 'register' | 'verify'
 
 function LoginContent() {
   const [mode, setMode] = useState<Mode>('login')
@@ -18,6 +18,8 @@ function LoginContent() {
   const [name, setName] = useState('')
   const [role, setRole] = useState<'student' | 'teacher'>('student')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [verifyCode, setVerifyCode] = useState('')
+  const [devCode, setDevCode] = useState('') // 개발용: 서버에서 반환된 코드
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { setAuth } = useAuthStore()
@@ -44,8 +46,16 @@ function LoginContent() {
       setAuth(data.user as User, data.access_token)
       redirect(data.user.role)
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { detail?: string } } }
-      setError(axiosErr?.response?.data?.detail || '로그인에 실패했습니다.')
+      const axiosErr = err as { response?: { data?: { detail?: string }; status?: number } }
+      const detail = axiosErr?.response?.data?.detail || '로그인에 실패했습니다.'
+      if (axiosErr?.response?.status === 403) {
+        // 미인증 계정 → 인증 화면으로
+        setMode('verify')
+        setDevCode('')
+        setError(detail)
+      } else {
+        setError(detail)
+      }
     } finally {
       setLoading(false)
     }
@@ -59,8 +69,10 @@ function LoginContent() {
     setLoading(true)
     try {
       const data = await authAPI.register(email, password, name, role)
-      setAuth(data.user as User, data.access_token)
-      redirect(data.user.role)
+      // 이메일 인증 필요
+      setDevCode(data.verification_code || '')
+      setMode('verify')
+      setError('')
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { detail?: string } } }
       setError(axiosErr?.response?.data?.detail || '회원가입에 실패했습니다.')
@@ -69,25 +81,113 @@ function LoginContent() {
     }
   }
 
-  const switchMode = (m: Mode) => {
-    setMode(m); setError(''); setEmail(''); setPassword(''); setName(''); setConfirmPassword('')
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const data = await authAPI.verifyEmail(email, verifyCode)
+      setAuth(data.user as User, data.access_token)
+      redirect(data.user.role)
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { detail?: string } } }
+      setError(axiosErr?.response?.data?.detail || '인증에 실패했습니다.')
+    } finally {
+      setLoading(false)
+    }
   }
 
+  const handleResendCode = async () => {
+    setLoading(true)
+    try {
+      const data = await authAPI.resendCode(email)
+      setDevCode(data.verification_code || '')
+      setError('인증 코드가 재발송되었습니다.')
+    } catch {
+      setError('재발송에 실패했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const switchMode = (m: 'login' | 'register') => {
+    setMode(m); setError(''); setEmail(''); setPassword(''); setName(''); setConfirmPassword(''); setVerifyCode(''); setDevCode('')
+  }
+
+  // ── 이메일 인증 화면 ──────────────────────────────────────────────────────────
+  if (mode === 'verify') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4 py-8">
+        <div className="fixed top-4 right-4"><ThemeToggle /></div>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md">
+          <div className="text-center mb-6">
+            <Image src="/logo.png" alt="EduLink AI" width={260} height={87} className="h-24 w-auto object-contain mx-auto" priority />
+          </div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">이메일 인증</h2>
+          {devCode ? (
+            <>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                SMTP 미설정 상태입니다. 아래 개발용 코드를 입력해주세요.
+              </p>
+              <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+                <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">개발 모드 - 인증 코드 (SMTP 설정 후 실제 이메일로 전송됩니다)</p>
+                <p className="text-2xl font-bold text-yellow-800 dark:text-yellow-300 tracking-widest mt-1">{devCode}</p>
+              </div>
+            </>
+          ) : (
+            <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg">
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                <span className="font-medium">{email}</span> 으로 인증 코드를 발송했습니다.
+              </p>
+              <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-1">받은편지함(또는 스팸함)을 확인해주세요.</p>
+            </div>
+          )}
+          <form onSubmit={handleVerify} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">인증 코드 6자리</label>
+              <input
+                type="text"
+                value={verifyCode}
+                onChange={e => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="000000"
+                maxLength={6}
+                required
+              />
+            </div>
+            {error && <p className={`text-sm ${error.includes('재발송') ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>{error}</p>}
+            <button type="submit" disabled={loading || verifyCode.length !== 6}
+              className="w-full bg-indigo-600 dark:bg-indigo-500 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+              {loading ? '인증 중...' : '인증 완료'}
+            </button>
+          </form>
+          <div className="mt-4 flex gap-3 text-sm text-center">
+            <button onClick={handleResendCode} disabled={loading} className="flex-1 text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50">
+              코드 재발송
+            </button>
+            <button onClick={() => switchMode('login')} className="flex-1 text-gray-500 dark:text-gray-400 hover:underline">
+              로그인으로
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── 로그인 / 회원가입 화면 ─────────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4 py-8">
-      <div className="fixed top-4 right-4">
-        <ThemeToggle />
-      </div>
+      <div className="fixed top-4 right-4"><ThemeToggle /></div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md">
         <div className="text-center mb-6">
-          <Image src="/logo.png" alt="EDU Simplete" width={200} height={67} className="h-16 w-auto object-contain mx-auto" priority />
+          <Image src="/logo.png" alt="EduLink AI" width={260} height={87} className="h-24 w-auto object-contain mx-auto" priority />
           <p className="text-gray-500 dark:text-gray-400 mt-2">AI 기반 교육 플랫폼</p>
         </div>
 
         {/* 로그인 / 회원가입 탭 */}
         <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1 mb-6">
-          {(['login', 'register'] as Mode[]).map(m => (
+          {(['login', 'register'] as const).map(m => (
             <button key={m} onClick={() => switchMode(m)}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                 mode === m ? 'bg-white dark:bg-gray-600 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-500 dark:text-gray-400'
@@ -97,16 +197,8 @@ function LoginContent() {
           ))}
         </div>
 
-        {/* 소셜 로그인 */}
+        {/* 소셜 로그인 (네이버, 구글만) */}
         <div className="space-y-3 mb-6">
-          <a href={`${API_BASE}/api/auth/kakao`}
-            className="flex items-center justify-center gap-3 w-full py-2.5 rounded-lg font-medium transition-opacity hover:opacity-90"
-            style={{ backgroundColor: '#FEE500', color: '#000' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3C6.477 3 2 6.477 2 12c0 3.86 2.186 7.22 5.42 8.97-.19.67-.688 2.43-.788 2.81-.125.47.173.464.364.337.149-.1 2.36-1.607 3.312-2.26.546.08 1.107.123 1.692.123 5.523 0 10-3.477 10-7.98C22 6.477 17.523 3 12 3z"/>
-            </svg>
-            카카오로 {mode === 'login' ? '로그인' : '시작하기'}
-          </a>
           <a href={`${API_BASE}/api/auth/naver`}
             className="flex items-center justify-center gap-3 w-full py-2.5 rounded-lg font-medium transition-opacity hover:opacity-90"
             style={{ backgroundColor: '#03C75A', color: '#fff' }}>
@@ -143,13 +235,13 @@ function LoginContent() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">이메일</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="teacher@demo.com" required />
+                placeholder="이메일 주소" required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">비밀번호</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
                 className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="demo1234" required />
+                placeholder="비밀번호" required />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <button type="submit" disabled={loading}
@@ -202,19 +294,11 @@ function LoginContent() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <button type="submit" disabled={loading}
               className="w-full bg-indigo-600 dark:bg-indigo-500 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 transition-colors">
-              {loading ? '처리 중...' : '회원가입'}
+              {loading ? '처리 중...' : '회원가입 및 인증코드 받기'}
             </button>
           </form>
         )}
 
-        {mode === 'login' && (
-          <div className="mt-5 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-400">
-            <p className="font-medium mb-1 text-gray-700 dark:text-gray-300">데모 계정</p>
-            <p>teacher@demo.com / demo1234</p>
-            <p>student@demo.com / demo1234</p>
-            <p>admin@demo.com / demo1234</p>
-          </div>
-        )}
       </div>
     </div>
   )

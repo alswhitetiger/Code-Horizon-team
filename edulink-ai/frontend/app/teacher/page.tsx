@@ -36,7 +36,7 @@ function InviteModal({ courseId, courseTitle, onClose }: InviteModalProps) {
       const res = await teacherAPI.inviteStudent(courseId, email.trim())
       setMessage(res.message)
       setEmail('')
-      setStudents(prev => [...prev, res.student])
+      setStudents(prev => [...prev, { id: res.studentId, name: res.name, email: res.email }])
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { detail?: string } } }
       setError(axiosErr?.response?.data?.detail || '초대에 실패했습니다.')
@@ -118,7 +118,7 @@ function InviteModal({ courseId, courseTitle, onClose }: InviteModalProps) {
 export default function TeacherDashboard() {
   const router = useRouter()
   const [courses, setCourses] = useState<Course[]>([])
-  const [submissions, setSubmissions] = useState<Submission[]>(mockSubmissions)
+  const [submissions, setSubmissions] = useState<Submission[]>([])
   const [inviteCourse, setInviteCourse] = useState<{ id: string; title: string } | null>(null)
   const pendingCount = submissions.filter(s => (s.status || '채점대기') === '채점대기').length
 
@@ -126,6 +126,9 @@ export default function TeacherDashboard() {
     teacherAPI.getCourses()
       .then(setCourses)
       .catch(() => setCourses(mockCourses))
+    teacherAPI.getAllSubmissions()
+      .then(setSubmissions)
+      .catch(() => {})
   }, [])
 
   return (

@@ -5,8 +5,6 @@ import { Submission } from '@/types'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Link from 'next/link'
-import { mockAssessments, mockCourses } from '@/lib/mock-data'
-
 type Filter = 'all' | '채점대기' | '채점완료'
 
 export default function GradingPage() {
@@ -19,15 +17,6 @@ export default function GradingPage() {
       .then(setSubmissions)
       .finally(() => setLoading(false))
   }, [])
-
-  const getAssessmentTitle = (assessmentId: string) => {
-    return mockAssessments.find(a => a.id === assessmentId)?.title || assessmentId
-  }
-  const getCourseTitle = (assessmentId: string) => {
-    const assessment = mockAssessments.find(a => a.id === assessmentId)
-    if (!assessment) return ''
-    return mockCourses.find(c => c.id === assessment.courseId)?.title || ''
-  }
 
   const filtered = submissions.filter(s =>
     filter === 'all' ? true : (s.status || '채점대기') === filter
@@ -106,8 +95,8 @@ export default function GradingPage() {
                   {filtered.map(s => (
                     <tr key={s.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                       <td className="py-3 px-3 font-medium text-gray-900 dark:text-gray-100">{s.studentName || s.studentId}</td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-300">{getAssessmentTitle(s.assessmentId)}</td>
-                      <td className="py-3 px-3 text-gray-500 dark:text-gray-400 text-xs">{getCourseTitle(s.assessmentId)}</td>
+                      <td className="py-3 px-3 text-gray-600 dark:text-gray-300">{s.assessmentTitle || s.assessmentId}</td>
+                      <td className="py-3 px-3 text-gray-500 dark:text-gray-400 text-xs">{s.courseTitle || ''}</td>
                       <td className="py-3 px-3 text-gray-400 dark:text-gray-500">{s.submittedAt.slice(0, 10)}</td>
                       <td className="py-3 px-3 font-medium">{s.aiScore !== undefined ? `${s.aiScore}점` : '-'}</td>
                       <td className="py-3 px-3">
@@ -138,7 +127,7 @@ export default function GradingPage() {
                         {s.status || '채점대기'}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{getAssessmentTitle(s.assessmentId)}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{s.assessmentTitle || s.assessmentId}</p>
                     <div className="flex items-center justify-between mt-2">
                       <p className="text-xs text-gray-400">{s.submittedAt.slice(0, 10)}</p>
                       {s.aiScore !== undefined && <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">AI 점수: {s.aiScore}점</p>}

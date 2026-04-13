@@ -13,19 +13,31 @@ const NAV_LINKS = [
 ]
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
-  const { user, setAuth } = useAuthStore()
+  const { user, token, setAuth, clearAuth } = useAuthStore()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token')
-      const userData = localStorage.getItem('user')
-      if (!token) { router.push('/login'); return }
-      if (!user && userData) setAuth(JSON.parse(userData), token)
-      if (user && user.role !== 'student') router.push('/login')
+    const storedToken = token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null)
+    if (!storedToken) { router.push('/login'); return }
+
+    if (storedToken.startsWith('demo-token-')) {
+      clearAuth(); router.push('/login'); return
     }
-  }, [user])
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${storedToken}` }
+    }).then(r => {
+      if (!r.ok) { clearAuth(); router.push('/login'); return }
+      return r.json()
+    }).then(data => {
+      if (!data) return
+      if (data.role !== 'student') { clearAuth(); router.push('/login'); return }
+      setAuth({ id: data.id, email: data.email, name: data.name, role: data.role }, storedToken)
+    }).catch(() => {
+      if (user?.role !== 'student') { clearAuth(); router.push('/login') }
+    })
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -33,7 +45,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div className="flex items-center justify-between">
           {/* 로고 */}
           <div className="flex items-center gap-6">
-            <Image src="/logo.png" alt="EDU Simplete" width={130} height={44} className="h-10 w-auto object-contain" priority />
+            <Image src="/logo.png" alt="EDU Simplete" width={180} height={60} className="h-14 w-auto object-contain" priority />
             {/* 데스크탑 메뉴 */}
             <div className="hidden sm:flex items-center gap-5">
               {NAV_LINKS.map(l => (

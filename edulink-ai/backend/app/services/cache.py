@@ -3,7 +3,12 @@ from typing import Optional
 import redis.asyncio as aioredis
 from app.core.config import settings
 
-redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+redis_client = None
+if settings.REDIS_URL:
+    try:
+        redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+    except Exception:
+        redis_client = None
 
 TTL = {
     "questions":       3600,
@@ -19,6 +24,8 @@ def make_cache_key(prefix: str, **kwargs) -> str:
     return f"edulink:{prefix}:{h}"
 
 async def get_cache(key: str) -> Optional[dict]:
+    if not redis_client:
+        return None
     try:
         val = await redis_client.get(key)
         return json.loads(val) if val else None
@@ -26,12 +33,16 @@ async def get_cache(key: str) -> Optional[dict]:
         return None
 
 async def set_cache(key: str, data: dict, ttl: int) -> None:
+    if not redis_client:
+        return
     try:
         await redis_client.setex(key, ttl, json.dumps(data, ensure_ascii=False))
     except Exception:
         pass
 
 async def invalidate(prefix: str) -> None:
+    if not redis_client:
+        return
     try:
         keys = await redis_client.keys(f"edulink:{prefix}:*")
         if keys:

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+import asyncio
 import anthropic
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
@@ -123,19 +124,44 @@ async def generate_report(period: str, course_id: str | None, db: AsyncSession) 
   "generated_at": "{datetime.now(timezone.utc).isoformat()}"
 }}"""
 
-    message = client.messages.create(
-        model="claude-opus-4-6",
-        max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    import re, json
-    text = message.content[0].text
     try:
-        result = json.loads(text)
-    except json.JSONDecodeError:
-        match = re.search(r'\{.*\}', text, re.DOTALL)
-        result = json.loads(match.group()) if match else {"summary": text, "highlights": [], "concerns": [], "recommendations": [], "generated_at": datetime.now(timezone.utc).isoformat()}
+        message = await asyncio.to_thread(
+            client.messages.create,
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        import re, json
+        text = message.content[0].text
+        try:
+            result = json.loads(text)
+        except json.JSONDecodeError:
+            match = re.search(r'\{.*\}', text, re.DOTALL)
+            result = json.loads(match.group()) if match else _fallback_report(metrics, at_risk, period)
+    except Exception:
+        result = _fallback_report(metrics, at_risk, period)
 
     await set_cache(cache_key, result, TTL["report"])
     return result
+
+
+def _fallback_report(metrics: dict, at_risk: list, period: str) -> dict:
+    active_rate = round(metrics["activeToday"] / metrics["totalStudents"] * 100, 1) if metrics["totalStudents"] > 0 else 0
+    return {
+        "summary": f"총 {metrics['totalStudents']}명의 학생 중 오늘 {metrics['activeToday']}명({active_rate}%)이 활동했습니다. 평균 점수는 {metrics['avgScore']}점이며 총 {metrics['totalSubmissions']}건의 제출이 있었습니다.",
+        "highlights": [
+            f"총 학생 수: {metrics['totalStudents']}명",
+            f"오늘 활성 학생: {metrics['activeToday']}명 ({active_rate}%)",
+            f"전체 제출 건수: {metrics['totalSubmissions']}건",
+        ],
+        "concerns": [
+            f"이탈 위험 학생 {len(at_risk)}명 모니터링 필요",
+        ] if at_risk else ["특이사항 없음"],
+        "recommendations": [
+            "정기적인 학습 현황 점검 권장",
+            "이탈 위험 학생 개별 상담 실시",
+            "우수 학생 성과 공유로 동기 부여",
+        ],
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }

@@ -58,10 +58,71 @@ const TOPICS: Record<string, Record<string, string[]>> = {
     고2: ['한국지리', '세계지리', '경제', '정치와 법', '사회·문화', '한국사 (근현대)', '생활과 윤리'],
     고3: ['수능 한국지리', '수능 세계지리', '수능 경제', '수능 정치와 법', '수능 사회·문화', '수능 생활과 윤리', '수능 한국사'],
   },
+  물리: {
+    중1: ['힘과 운동', '빛과 파동', '에너지 전환'],
+    중2: ['전기와 자기', '운동의 법칙', '에너지'],
+    중3: ['역학적 에너지', '전기 에너지', '파동과 빛'],
+    고1: ['역학적 시스템', '에너지와 열', '파동과 정보'],
+    고2: ['역학 (뉴턴 법칙)', '전자기 (전기장·자기장)', '파동 (빛과 소리)', '현대물리 입문'],
+    고3: ['역학 심화', '전자기학 심화', '광학', '핵물리와 소립자', '수능 물리 유형'],
+  },
+  화학: {
+    중1: ['물질의 성질', '물질의 상태 변화', '혼합물 분리'],
+    중2: ['물질의 구성 (원소·원자)', '화학 반응', '산과 염기'],
+    중3: ['화학 반응식', '산화와 환원', '화학 에너지'],
+    고1: ['물질의 규칙성', '화학 결합', '화학 변화'],
+    고2: ['원소와 주기율표', '화학 결합과 분자', '산·염기 반응', '산화·환원 반응', '열화학'],
+    고3: ['전기화학', '열역학', '평형과 반응속도', '유기화합물', '수능 화학 유형'],
+  },
+  생명과학: {
+    중1: ['생물의 다양성', '세포의 구조', '소화와 순환'],
+    중2: ['식물의 구조와 기능', '동물의 구조와 기능', '자극과 반응'],
+    중3: ['세포분열과 유전', '생태계와 환경', '진화와 분류'],
+    고1: ['생명 시스템', '항상성과 몸의 조절', '생태계'],
+    고2: ['세포와 물질대사', '유전 (멘델 유전학)', '진화와 계통', '생태계와 상호작용'],
+    고3: ['세포 신호전달', '유전자 발현', '진화와 종분화', '생태계 보전', '수능 생명과학 유형'],
+  },
+  지구과학: {
+    중1: ['지구의 구조', '광물과 암석', '지표의 변화'],
+    중2: ['날씨와 기후', '태양계', '별과 우주'],
+    중3: ['지각 변동', '대기와 해양', '우주 탐사'],
+    고1: ['지구 시스템', '지구의 역사', '대기와 해양의 상호작용'],
+    고2: ['판 구조론', '대기 대순환', '해양 순환', '천문학 기초'],
+    고3: ['지구 내부 구조', '기후변화', '은하와 우주', '수능 지구과학 유형'],
+  },
+  한국사: {
+    중1: ['선사시대와 고조선', '삼국시대', '남북국시대'],
+    중2: ['고려시대', '조선 전기', '조선 후기'],
+    중3: ['근대의 시작', '일제강점기', '현대 대한민국'],
+    고1: ['전근대 한국사의 이해', '근대 국민 국가 수립', '일제 식민지 지배와 민족운동', '대한민국의 발전'],
+    고2: ['고대 국가 형성', '고려의 성립과 변천', '조선 유교 사회', '조선 사회의 변동', '근대 국가 수립 운동', '일제강점과 민족운동'],
+    고3: ['수능 전근대사', '수능 근현대사', '수능 한국사 사료 분석', '수능 유형 정리'],
+  },
+  기타: {
+    중1: ['자유 주제 (중1)', '창의적 사고', '융합 문제'],
+    중2: ['자유 주제 (중2)', '창의적 사고', '융합 문제'],
+    중3: ['자유 주제 (중3)', '창의적 사고', '융합 문제'],
+    고1: ['자유 주제 (고1)', '창의적 사고', '융합 문제'],
+    고2: ['자유 주제 (고2)', '창의적 사고', '융합 문제'],
+    고3: ['자유 주제 (고3)', '창의적 사고', '수능 기출 분석'],
+  },
+}
+
+// DB가 "중학교 1학년" 형식으로 저장될 수 있어 short form으로 정규화
+const normalizeGrade = (grade: string): string => {
+  const map: Record<string, string> = {
+    '중학교 1학년': '중1', '중학교 2학년': '중2', '중학교 3학년': '중3',
+    '고등학교 1학년': '고1', '고등학교 2학년': '고2', '고등학교 3학년': '고3',
+    '고1학년': '고1', '고2학년': '고2', '고3학년': '고3',
+  }
+  return map[grade] ?? grade
 }
 
 const getTopics = (subject: string, grade: string): string[] => {
-  return TOPICS[subject]?.[grade] ?? ['기타 주제']
+  const g = normalizeGrade(grade)
+  // 과목 부분 매칭 (예: "과학" → "과학탐구")
+  const subjectKey = Object.keys(TOPICS).find(k => k === subject || k.startsWith(subject) || subject.startsWith(k)) ?? subject
+  return TOPICS[subjectKey]?.[g] ?? ['기타 주제']
 }
 
 const DIFFICULTY_COLOR: Record<string, string> = {
@@ -79,7 +140,7 @@ function QuestionsInner() {
   const searchParams = useSearchParams()
   const courseIdParam = searchParams.get('courseId') || ''
   const subjectParam = searchParams.get('subject') || '수학'
-  const gradeParam = searchParams.get('grade') || '중1'
+  const gradeParam = normalizeGrade(searchParams.get('grade') || '중1')
   const fromCourse = !!courseIdParam
 
   const [step, setStep] = useState<Step>('form')
@@ -285,11 +346,11 @@ function QuestionsInner() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mb-2">
                           {q.options.map((opt, j) => (
                             <div key={j} className={`text-xs px-3 py-1.5 rounded-lg border ${
-                              isExpanded && opt === q.answer
+                              isExpanded && opt.trim() === q.answer.trim()
                                 ? 'border-green-400 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-medium'
                                 : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300'
                             }`}>
-                              {opt} {isExpanded && opt === q.answer && '✓'}
+                              {opt} {isExpanded && opt.trim() === q.answer.trim() && '✓'}
                             </div>
                           ))}
                         </div>

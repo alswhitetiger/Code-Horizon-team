@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Text, DateTime, Index
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -16,7 +16,7 @@ class QuestionBank(Base):
     question_type: Mapped[str] = mapped_column(String(20), nullable=False)
     difficulty: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    options: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    options: Mapped[list | None] = mapped_column(JSON, nullable=True)
     answer: Mapped[str] = mapped_column(Text, nullable=False)
     explanation: Mapped[str] = mapped_column(Text, nullable=False)
     rubric: Mapped[str | None] = mapped_column(Text, nullable=True)

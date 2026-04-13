@@ -213,6 +213,72 @@ function TeacherCoursesModal({ teacher, onClose }: { teacher: UserItem; onClose:
   )
 }
 
+function RoleChangeModal({ user, onClose, onChanged }: { user: UserItem; onClose: () => void; onChanged: (id: string, role: string) => void }) {
+  const [role, setRole] = useState(user.role)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (role === user.role) { onClose(); return }
+    if (role === 'admin' && !confirm(`${user.name}님을 관리자로 승격하시겠습니까?\n관리자는 모든 데이터에 접근할 수 있습니다.`)) return
+    setLoading(true); setError('')
+    try {
+      await adminAPI.updateUser(user.id, { role })
+      onChanged(user.id, role)
+      onClose()
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { detail?: string } } }
+      setError(axiosErr?.response?.data?.detail || '역할 변경에 실패했습니다.')
+    } finally { setLoading(false) }
+  }
+
+  const ALL_ROLE_OPTIONS = [
+    { value: 'student', label: '학생', desc: '시험 응시, 진로 상담', color: 'text-blue-600 dark:text-blue-400' },
+    { value: 'teacher', label: '교사', desc: '문제 생성, 채점, 강의 관리', color: 'text-green-600 dark:text-green-400' },
+    { value: 'admin', label: '관리자', desc: '전체 시스템 관리 권한', color: 'text-purple-600 dark:text-purple-400' },
+  ]
+  const ROLE_OPTIONS = user.role === 'teacher'
+    ? ALL_ROLE_OPTIONS.filter(o => o.value === 'admin')
+    : ALL_ROLE_OPTIONS
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">역할 변경</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl">✕</button>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+          <span className="font-medium text-gray-800 dark:text-gray-200">{user.name}</span> ({user.email})
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {ROLE_OPTIONS.map(opt => (
+            <label key={opt.value} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+              role === opt.value ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}>
+              <input type="radio" name="role" value={opt.value} checked={role === opt.value} onChange={() => setRole(opt.value)} className="sr-only" />
+              <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 border-indigo-500">
+                {role === opt.value && <div className="w-2 h-2 rounded-full bg-indigo-500" />}
+              </div>
+              <div>
+                <p className={`text-sm font-semibold ${opt.color}`}>{opt.label}</p>
+                <p className="text-xs text-gray-400">{opt.desc}</p>
+              </div>
+              {user.role === opt.value && <span className="ml-auto text-xs text-gray-400">현재</span>}
+            </label>
+          ))}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <button type="submit" disabled={loading || role === user.role}
+            className="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors mt-2">
+            {loading ? '변경 중...' : '역할 변경'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>('dashboard')
   const [metrics, setMetrics] = useState<DashboardMetrics>(mockDashboard)
@@ -222,6 +288,7 @@ export default function AdminDashboard() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [usersLoaded, setUsersLoaded] = useState(false)
   const [selectedTeacher, setSelectedTeacher] = useState<UserItem | null>(null)
+  const [roleChangeTarget, setRoleChangeTarget] = useState<UserItem | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -250,6 +317,10 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleRoleChanged = (userId: string, newRole: string) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u))
+  }
+
   const filteredUsers = users.filter(u =>
     !userFilter || u.role === userFilter
   )
@@ -266,6 +337,13 @@ export default function AdminDashboard() {
         <TeacherCoursesModal
           teacher={selectedTeacher}
           onClose={() => setSelectedTeacher(null)}
+        />
+      )}
+      {roleChangeTarget && (
+        <RoleChangeModal
+          user={roleChangeTarget}
+          onClose={() => setRoleChangeTarget(null)}
+          onChanged={handleRoleChanged}
         />
       )}
 
@@ -366,19 +444,25 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="py-3 px-2 text-gray-400 dark:text-gray-500">{u.createdAt.slice(0, 10)}</td>
-                        <td className="py-3 px-2 text-right flex items-center justify-end gap-3">
-                          {u.role === 'teacher' && (
-                            <button
-                              onClick={() => setSelectedTeacher(u)}
-                              className="text-xs text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-400 font-medium"
-                            >
-                              강의 관리
+                        <td className="py-3 px-2 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {u.role === 'teacher' && (
+                              <button onClick={() => setSelectedTeacher(u)}
+                                className="text-xs text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-400 font-medium px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                                강의 관리
+                              </button>
+                            )}
+                            {u.role !== 'student' && (
+                              <button onClick={() => setRoleChangeTarget(u)}
+                                className="text-xs text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 font-medium px-2 py-1 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20">
+                                권한 변경
+                              </button>
+                            )}
+                            <button onClick={() => handleDeleteUser(u.id, u.name)}
+                              className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+                              삭제
                             </button>
-                          )}
-                          <button onClick={() => handleDeleteUser(u.id, u.name)}
-                            className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400">
-                            삭제
-                          </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -400,6 +484,12 @@ export default function AdminDashboard() {
                         <button onClick={() => setSelectedTeacher(u)}
                           className="text-xs text-indigo-500 hover:text-indigo-700 font-medium">
                           강의 관리
+                        </button>
+                      )}
+                      {u.role !== 'student' && (
+                        <button onClick={() => setRoleChangeTarget(u)}
+                          className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                          권한 변경
                         </button>
                       )}
                       <button onClick={() => handleDeleteUser(u.id, u.name)}

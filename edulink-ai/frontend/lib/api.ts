@@ -37,6 +37,10 @@ export const authAPI = {
   },
   register: (email: string, password: string, name: string, role: string) =>
     api.post('/api/auth/register', { email, password, name, role }).then(r => r.data),
+  verifyEmail: (email: string, code: string) =>
+    api.post('/api/auth/verify-email', { email, code }).then(r => r.data),
+  resendCode: (email: string) =>
+    api.post('/api/auth/resend-code', { email }).then(r => r.data),
   me: () => api.get('/api/auth/me').then(r => r.data),
   updateProfile: (name: string, role: string) =>
     api.patch('/api/auth/profile', { name, role }).then(r => r.data),
@@ -100,6 +104,7 @@ export const teacherAPI = {
     }).then(r => r.data),
   deleteVideo: (videoId: string) => api.delete(`/api/teacher/videos/${videoId}`).then(r => r.data),
   getVideoProgress: (videoId: string) => api.get(`/api/teacher/videos/${videoId}/progress`).then(r => r.data),
+  getSubmission: (submissionId: string) => api.get(`/api/teacher/submissions/${submissionId}`).then(r => r.data),
 }
 
 // Student

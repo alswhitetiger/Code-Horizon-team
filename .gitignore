@@ -38,3 +38,11 @@ Thumbs.db
 
 # User uploads (never commit binary media files)
 edulink-ai/backend/uploads/
+
+# SQLite DB (로컬 개발용, 커밋 제외)
+*.db
+*.sqlite
+*.sqlite3
+
+# Next.js public (빌드 산출물)
+edulink-ai/frontend/public/

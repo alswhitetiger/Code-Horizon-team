@@ -57,7 +57,7 @@ async def submit_assessment(body: SubmissionCreate, background_tasks: Background
     submission = Submission(id=str(uuid.uuid4()), assessment_id=body.assessment_id, student_id=current_user.id, answers=body.answers)
     db.add(submission)
     await db.commit()
-    background_tasks.add_task(auto_grade_submission, submission.id)
+    background_tasks.add_task(auto_grade_submission, submission.id)  # submission_id만 전달
     return {"message": "제출되었습니다. AI 채점이 곧 진행됩니다.", "submissionId": submission.id}
 
 @router.get("/progress")
@@ -73,7 +73,7 @@ async def recommendations(current_user: User = Depends(require_role("student")),
 
 @router.post("/logs")
 async def create_log(body: LearningLogCreate, current_user: User = Depends(require_role("student")), db: AsyncSession = Depends(get_db)):
-    log = LearningLog(id=str(uuid.uuid4()), student_id=current_user.id, action=body.action, metadata_json=body.metadata)
+    log = LearningLog(id=str(uuid.uuid4()), student_id=current_user.id, event_type=body.event_type, metadata_=body.metadata)
     db.add(log)
     await db.commit()
     return {"status": "ok"}

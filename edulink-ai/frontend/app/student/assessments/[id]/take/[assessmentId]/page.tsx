@@ -20,8 +20,8 @@ export default function TakeAssessmentPage() {
     studentAPI.getAssessment(assessmentId)
       .then((data) => {
         // 이미 제출한 시험이면 결과 화면 표시
-        if (data?.alreadySubmitted) {
-          setResult({ score: data.myScore, feedback: data.myFeedback })
+        if (data?.submitted) {
+          setResult({ score: data.submission?.score, feedback: data.submission?.feedback })
           setSubmitted(true)
         }
         setAssessment(data)

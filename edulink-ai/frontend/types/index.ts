@@ -39,6 +39,8 @@ export interface Assessment {
 export interface Submission {
   id: string
   assessmentId: string
+  assessmentTitle?: string
+  courseTitle?: string
   studentId: string
   studentName?: string
   answers: Record<string, string>
