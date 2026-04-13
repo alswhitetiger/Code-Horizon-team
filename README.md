@@ -370,7 +370,7 @@ Windows에서 `localhost`는 IPv6(`::1`)로 연결을 시도할 수 있습니다
 
 ## 팀
 
-**Code Horizon Team** - 2024
+**Code Horizon Team** - 2026
 
 - [김민균](https://github.com/alswhitetiger)
 - [조세희](https://github.com/SEHEE-8546)
