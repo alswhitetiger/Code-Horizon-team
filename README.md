@@ -22,7 +22,7 @@
 | AI 문제 생성 | 과목·학년·주제를 선택하면 AI가 시험 문제를 자동 생성 |
 | 문제 은행 | 생성된 문제를 DB에 저장하고 재사용 (API 절약) |
 | 답안 채점 | 제출된 답안을 AI가 자동 채점 및 피드백 제공 |
-| 강의 영상 관리 | 강의별 동영상 업로드 및 학생 시청 현황 확인 |
+| 강의 영상 관리 | 강의별 동영상 업로드, 삭제, 학생 시청 현황 확인 |
 | 학생 진로 관리 | 학생별 진로 목표 및 AI 상담 현황 조회 |
 | 학생 관리 | 강의에 학생 초대, 제거, 현황 조회 |
 | 시험 관리 | 시험 생성·배포, 제출 현황 확인 |
@@ -56,9 +56,9 @@
 
 ### 백엔드
 - **Framework**: FastAPI (Python)
-- **Database**: PostgreSQL + SQLAlchemy (비동기)
-- **Cache**: Redis
-- **Auth**: JWT + OAuth (Google, Kakao, Naver)
+- **Database**: SQLite (기본값, 별도 설치 불필요) / PostgreSQL (선택)
+- **Cache**: Redis (선택사항 - 없어도 동작)
+- **Auth**: JWT + 이메일 인증(SMTP) + OAuth (Google, Kakao, Naver)
 - **AI (문제 생성·채점)**: Anthropic Claude API
 - **AI (진로 상담)**: HuggingFace - Qwen2.5
 
@@ -71,7 +71,7 @@ Code-Horizon-team/
 └── edulink-ai/
     ├── frontend/
     │   ├── app/
-    │   │   ├── (auth)/                    # 로그인, 회원가입, OAuth 콜백, 프로필 설정
+    │   │   ├── (auth)/                    # 로그인, 회원가입, 이메일 인증, OAuth 콜백
     │   │   ├── student/                   # 학생 페이지
     │   │   │   ├── page.tsx               #   학습 현황 대시보드
     │   │   │   ├── assessments/[id]/      #   강의별 시험 목록
@@ -79,7 +79,7 @@ Code-Horizon-team/
     │   │   │   ├── career/                #   AI 진로 상담
     │   │   │   └── videos/[courseId]/     #   강의 영상 시청
     │   │   ├── teacher/                   # 교사 페이지
-    │   │   │   ├── page.tsx               #   강의·학생 관리 대시보드
+    │   │   │   ├── page.tsx               #   강의·학생·영상 관리 대시보드
     │   │   │   ├── questions/             #   AI 문제 생성
     │   │   │   ├── grading/               #   제출 답안 채점
     │   │   │   └── career/                #   학생 진로 현황
@@ -91,13 +91,13 @@ Code-Horizon-team/
     └── backend/
         ├── app/
         │   ├── routers/                   # API 엔드포인트
-        │   │   ├── auth.py                #   인증 (JWT + OAuth)
-        │   │   ├── teacher.py             #   교사 API (강의, 시험, 영상, 채점)
-        │   │   ├── student.py             #   학생 API (대시보드, 시험, 영상)
+        │   │   ├── auth.py                #   인증 (JWT + 이메일 인증 + OAuth)
+        │   │   ├── teacher.py             #   교사 API (강의, 시험, 영상 업로드, 채점)
+        │   │   ├── student.py             #   학생 API (대시보드, 시험, 영상 시청)
         │   │   ├── career.py              #   진로 AI API
         │   │   └── admin.py               #   관리자 API (분석, 리포트)
-        │   ├── models/                    # DB 모델
-        │   │   ├── user.py                #   사용자
+        │   ├── models/                    # DB 모델 (SQLAlchemy)
+        │   │   ├── user.py                #   사용자 (이메일 인증 필드 포함)
         │   │   ├── course.py              #   강의, 수강 등록
         │   │   ├── assessment.py          #   시험, 문제
         │   │   ├── submission.py          #   제출 답안
@@ -112,7 +112,7 @@ Code-Horizon-team/
         │   │   ├── analytics.py           #   학습 분석, 위험 학생 감지
         │   │   ├── assessment.py          #   시험 처리 로직
         │   │   ├── learning.py            #   학습 이력 처리
-        │   │   └── cache.py               #   Redis 캐시
+        │   │   └── cache.py               #   Redis 캐시 (없으면 자동 비활성화)
         │   └── core/                      # 설정, 인증, DB 연결
         ├── alembic/                       # DB 마이그레이션
         ├── seed.py                        # 데모 계정 + 샘플 데이터 생성
@@ -126,12 +126,13 @@ Code-Horizon-team/
 
 ### 필수 설치 항목
 
-| 프로그램 | 권장 버전 | 다운로드 |
-|----------|-----------|----------|
+| 프로그램 | 권장 버전 | 비고 |
+|----------|-----------|------|
 | Python | 3.11 이상 | [python.org](https://www.python.org/downloads/) |
 | Node.js | 18 이상 | [nodejs.org](https://nodejs.org/) |
-| PostgreSQL | 15 이상 | [postgresql.org](https://www.postgresql.org/download/) |
-| Redis | 최신 | Windows: [GitHub Releases](https://github.com/microsoftarchive/redis/releases) / macOS: `brew install redis` |
+
+> **SQLite는 Python에 내장**되어 있어 별도 설치가 필요 없습니다.  
+> PostgreSQL, Redis는 선택사항입니다.
 
 ---
 
@@ -144,41 +145,7 @@ cd Code-Horizon-team/edulink-ai
 
 ---
 
-### 2단계: 데이터베이스 생성
-
-**macOS / Linux:**
-```bash
-psql -U postgres -c "CREATE DATABASE edulink;"
-```
-
-**Windows (PowerShell):**
-```powershell
-# PostgreSQL 설치 버전에 맞게 경로 수정
-& "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -c "CREATE DATABASE edulink;"
-```
-
-> psql 명령어를 찾을 수 없다면 PostgreSQL `bin` 폴더를 시스템 PATH에 추가하거나 위처럼 전체 경로를 사용하세요.
-
----
-
-### 3단계: Redis 실행
-
-**macOS / Linux:**
-```bash
-redis-server
-```
-
-**Windows:**
-```powershell
-# Redis 설치 폴더에서 실행
-redis-server.exe
-```
-
-> Redis가 없어도 기본 기능은 동작하지만, 캐시 관련 기능이 비활성화됩니다.
-
----
-
-### 4단계: 백엔드 설정
+### 2단계: 백엔드 설정
 
 ```bash
 cd backend
@@ -195,6 +162,11 @@ python -m venv venv
 source venv/bin/activate
 ```
 
+> Windows에서 활성화 오류 시:
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
+
 **패키지 설치:**
 ```bash
 pip install -r requirements.txt
@@ -205,11 +177,13 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-`.env` 파일을 열어 값 입력 (자세한 내용은 [환경변수 설정](#환경변수-설정) 참고):
+`.env` 파일을 열어 아래 값들을 입력합니다:
 ```env
-DATABASE_URL=postgresql+asyncpg://postgres:비밀번호@127.0.0.1:5432/edulink
+# AI API 키 (필수)
 ANTHROPIC_API_KEY=sk-ant-...
 HF_TOKEN=hf_...
+
+# JWT 보안 키 (32자 이상 랜덤 문자열)
 JWT_SECRET=랜덤문자열32자이상
 ```
 
@@ -227,7 +201,7 @@ uvicorn app.main:app --reload
 
 ---
 
-### 5단계: 프론트엔드 설정
+### 3단계: 프론트엔드 설정
 
 새 터미널을 열고:
 
@@ -248,7 +222,7 @@ npm run dev
 
 ---
 
-### 6단계: 데모 데이터 생성 (선택)
+### 4단계: 데모 데이터 생성 (선택)
 
 백엔드 가상환경이 활성화된 상태에서 `backend` 디렉토리 안에서 실행합니다.
 
@@ -257,12 +231,12 @@ npm run dev
 python seed.py
 ```
 
-**문제 은행 생성 - API 불필요 (권장):**
+**문제 은행 초기 데이터 생성 (API 불필요, 권장):**
 ```bash
 python seed_question_bank_static.py
 ```
 
-**문제 은행 생성 - Claude AI로 자동 생성 (API 키 필요):**
+**문제 은행 AI 자동 생성 (Claude API 필요):**
 ```bash
 python seed_question_bank.py
 ```
@@ -286,18 +260,18 @@ python seed_question_bank.py
 ### 백엔드 (`backend/.env`)
 
 ```env
-# 데이터베이스 연결
-# Windows는 localhost 대신 127.0.0.1 사용 (IPv6 충돌 방지)
-DATABASE_URL=postgresql+asyncpg://postgres:비밀번호@127.0.0.1:5432/edulink
+# 데이터베이스 (기본값: SQLite - 설정 불필요)
+# PostgreSQL 사용 시: postgresql+asyncpg://유저:비밀번호@127.0.0.1:5432/edulink
+DATABASE_URL=sqlite+aiosqlite:///./edulink.db
 
-# Redis 캐시
+# Redis 캐시 (선택사항 - 없어도 동작)
 REDIS_URL=redis://localhost:6379
 
 # AI API 키
 ANTHROPIC_API_KEY=sk-ant-...        # 문제 생성·채점 (유료)
 HF_TOKEN=hf_...                      # 진로 상담 AI (무료)
 
-# JWT 인증 (랜덤 32자 이상 문자열 권장)
+# JWT 인증 (32자 이상 랜덤 문자열)
 JWT_SECRET=랜덤문자열32자이상
 JWT_EXPIRE_MINUTES=1440
 
@@ -305,7 +279,14 @@ JWT_EXPIRE_MINUTES=1440
 FRONTEND_URL=http://localhost:3000
 BACKEND_URL=http://localhost:8000
 
-# 소셜 로그인 (선택 사항)
+# 이메일 인증 (선택사항 - Gmail 앱 비밀번호 사용)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your@gmail.com
+SMTP_PASSWORD=앱비밀번호16자리
+SMTP_FROM=EduLink AI <noreply@edulink.ai>
+
+# 소셜 로그인 (선택사항)
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 KAKAO_CLIENT_ID=
@@ -337,18 +318,25 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 3. **New token** → Role: **Read** → 생성
 4. `hf_...` 토큰을 `.env`의 `HF_TOKEN`에 입력
 
+### Gmail 앱 비밀번호 (이메일 인증 - 선택사항)
+1. Google 계정 → **보안** → **2단계 인증** 활성화
+2. **앱 비밀번호** → 앱: 메일 → 생성
+3. 발급된 16자리 비밀번호를 `.env`의 `SMTP_PASSWORD`에 입력
+
+> 이메일 인증을 사용하지 않으면 SMTP 설정을 비워두어도 됩니다.
+
 ---
 
 ## 화면 구성
 
 | 경로 | 접근 | 설명 |
 |------|------|------|
-| `/` | 전체 | 메인 로그인 페이지 |
+| `/` | 전체 | 메인 로그인 / 회원가입 페이지 |
 | `/student` | 학생 | 학습 현황 대시보드 |
 | `/student/assessments/:id` | 학생 | 강의별 시험 목록 |
 | `/student/videos/:courseId` | 학생 | 강의 영상 시청 |
 | `/student/career` | 학생 | AI 진로 상담 |
-| `/teacher` | 교사 | 강의 및 학생 관리 대시보드 |
+| `/teacher` | 교사 | 강의·학생·영상 관리 대시보드 |
 | `/teacher/questions` | 교사 | AI 문제 생성 |
 | `/teacher/grading` | 교사 | 제출 답안 채점 |
 | `/teacher/career` | 교사 | 학생 진로 현황 조회 |
@@ -367,25 +355,16 @@ if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 ```
 
-### psql 명령어를 찾을 수 없음
-
-PostgreSQL `bin` 경로를 시스템 PATH에 추가하거나 전체 경로를 사용하세요:
-```powershell
-& "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres
-```
-
-### DB 연결 오류 (`localhost` → `127.0.0.1`)
-
-Windows에서 `localhost`는 IPv6(`::1`)로 연결을 시도할 수 있습니다.  
-`.env`의 `DATABASE_URL`에서 `localhost`를 `127.0.0.1`로 변경하세요.
-
 ### `.\venv\Scripts\activate` 오류 (PowerShell 실행 정책)
 
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-위 명령어 실행 후 다시 activate를 시도하세요.
+### PostgreSQL 사용 시 DB 연결 오류 (`localhost` → `127.0.0.1`)
+
+Windows에서 `localhost`는 IPv6(`::1`)로 연결을 시도할 수 있습니다.  
+`.env`의 `DATABASE_URL`에서 `localhost`를 `127.0.0.1`로 변경하세요.
 
 ---
 
