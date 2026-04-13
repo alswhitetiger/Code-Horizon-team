@@ -46,7 +46,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           {/* 로고 */}
           <div className="flex items-center gap-6">
             <Link href="/student">
-              <Image src="/logo.png" alt="EDU Simplete" width={180} height={60} className="h-14 w-auto object-contain cursor-pointer dark:invert dark:hue-rotate-180" priority />
+              <Image src="/logo.png" alt="EDU Simplete" width={180} height={60} className="h-14 w-auto object-contain cursor-pointer mix-blend-multiply dark:mix-blend-screen" priority />
             </Link>
             {/* 데스크탑 메뉴 */}
             <div className="hidden sm:flex items-center gap-5">
