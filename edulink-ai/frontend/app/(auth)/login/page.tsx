@@ -121,7 +121,9 @@ function LoginContent() {
         <div className="fixed top-4 right-4"><ThemeToggle /></div>
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md">
           <div className="text-center mb-6">
-            <Image src="/logo.png" alt="EduLink AI" width={260} height={87} className="h-24 w-auto object-contain mx-auto dark:brightness-0 dark:invert" priority />
+            <div className="inline-block bg-white rounded-2xl px-4 py-2">
+              <Image src="/logo.png" alt="EduLink AI" width={260} height={87} className="h-20 w-auto object-contain mx-auto" priority />
+            </div>
           </div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">이메일 인증</h2>
           {devCode ? (
@@ -181,7 +183,9 @@ function LoginContent() {
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md">
         <div className="text-center mb-6">
-          <Image src="/logo.png" alt="EduLink AI" width={260} height={87} className="h-24 w-auto object-contain mx-auto dark:brightness-0 dark:invert" priority />
+          <div className="inline-block bg-white rounded-2xl px-4 py-2">
+            <Image src="/logo.png" alt="EduLink AI" width={260} height={87} className="h-20 w-auto object-contain" priority />
+          </div>
           <p className="text-gray-500 dark:text-gray-400 mt-2">AI 기반 교육 플랫폼</p>
         </div>
 
