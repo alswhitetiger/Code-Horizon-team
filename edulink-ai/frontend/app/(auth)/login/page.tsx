@@ -11,11 +11,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 type Mode = 'login' | 'register' | 'verify'
 
-const DEMO_ACCOUNTS = [
-  { role: '교사', email: 'teacher@demo.com', password: 'demo1234', label: '교사 체험', color: 'bg-blue-500 hover:bg-blue-600' },
-  { role: '학생', email: 'student@demo.com', password: 'demo1234', label: '학생 체험', color: 'bg-green-500 hover:bg-green-600' },
-  { role: '관리자', email: 'admin@demo.com', password: 'demo1234', label: '관리자 체험', color: 'bg-purple-500 hover:bg-purple-600' },
-]
 
 function LoginContent() {
   const [mode, setMode] = useState<Mode>('login')
@@ -62,20 +57,6 @@ function LoginContent() {
       } else {
         setError(detail)
       }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
-    setLoading(true)
-    setError('')
-    try {
-      const data = await authAPI.login(demoEmail, demoPassword)
-      setAuth(data.user as User, data.access_token)
-      redirect(data.user.role)
-    } catch {
-      setError('데모 계정 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }
@@ -205,20 +186,6 @@ function LoginContent() {
         <div className="text-center mb-6">
           <Image src="/logo.png" alt="EduLink AI" width={260} height={87} className="h-20 w-auto object-contain mx-auto mix-blend-multiply dark:mix-blend-screen" priority />
           <p className="text-gray-500 dark:text-gray-400 mt-2">AI 기반 교육 플랫폼</p>
-        </div>
-
-        {/* 데모 계정 */}
-        <div className="mb-5 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 text-center">🎯 데모 계정으로 체험하기</p>
-          <div className="grid grid-cols-3 gap-2">
-            {DEMO_ACCOUNTS.map(acc => (
-              <button key={acc.email} onClick={() => handleDemoLogin(acc.email, acc.password)}
-                disabled={loading}
-                className={`${acc.color} text-white text-xs font-medium py-2 px-1 rounded-lg transition-colors disabled:opacity-50`}>
-                {acc.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* 로그인 / 회원가입 탭 */}

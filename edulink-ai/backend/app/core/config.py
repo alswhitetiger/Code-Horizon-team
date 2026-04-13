@@ -23,7 +23,10 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
-    # SMTP 이메일 설정 (Gmail: smtp.gmail.com / 앱 비밀번호 필요)
+    # Resend 이메일 설정 (https://resend.com - 무료 3000건/월)
+    RESEND_API_KEY: str = ""
+
+    # SMTP 이메일 설정 (로컬 개발용 / Railway에서는 SMTP 포트 차단됨)
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""

@@ -47,38 +47,52 @@ def _email_html(name: str, code: str) -> str:
 
 
 async def _send_verification_email(email: str, code: str, name: str):
-    """실제 SMTP로 인증 코드 발송. SMTP 미설정 시 콘솔 출력."""
-    if not settings.SMTP_HOST:
-        print(f"[DEV EMAIL] {email} → 인증 코드: {code}")
-        return
+    """Resend API → SMTP → 실패 시 False 반환"""
 
-    import smtplib, asyncio
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText as MimeText
+    # 1) Resend API 우선 시도 (Railway 환경에서 SMTP 포트 차단 문제 해결)
+    if settings.RESEND_API_KEY:
+        try:
+            import resend as resend_sdk
+            resend_sdk.api_key = settings.RESEND_API_KEY
+            resend_sdk.Emails.send({
+                "from": "EduLink AI <onboarding@resend.dev>",
+                "to": [email],
+                "subject": "[EduLink AI] 이메일 인증 코드",
+                "html": _email_html(name, code),
+            })
+            print(f"[EMAIL/Resend] 발송 완료: {email}")
+            return True
+        except Exception as e:
+            print(f"[EMAIL/Resend] 실패: {e}")
 
-    def _send_sync():
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = '[EduLink AI] 이메일 인증 코드'
-        msg['From'] = settings.SMTP_FROM
-        msg['To'] = email
-        msg.attach(MimeText(f"{name}님, EduLink AI 인증 코드: {code}", 'plain', 'utf-8'))
-        msg.attach(MimeText(_email_html(name, code), 'html', 'utf-8'))
+    # 2) SMTP 폴백 (로컬 개발용)
+    if settings.SMTP_HOST:
+        import smtplib, asyncio
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText as MimeText
 
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            if settings.SMTP_USER and settings.SMTP_PASSWORD:
-                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.sendmail(settings.SMTP_FROM, email, msg.as_string())
+        def _send_sync():
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = '[EduLink AI] 이메일 인증 코드'
+            msg['From'] = settings.SMTP_FROM
+            msg['To'] = email
+            msg.attach(MimeText(f"{name}님, EduLink AI 인증 코드: {code}", 'plain', 'utf-8'))
+            msg.attach(MimeText(_email_html(name, code), 'html', 'utf-8'))
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
+                server.ehlo(); server.starttls(); server.ehlo()
+                if settings.SMTP_USER and settings.SMTP_PASSWORD:
+                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.sendmail(settings.SMTP_FROM, email, msg.as_string())
 
-    try:
-        await asyncio.to_thread(_send_sync)
-        print(f"[EMAIL] 발송 완료: {email}")
-        return True
-    except Exception as e:
-        print(f"[EMAIL] 발송 실패: {e}")
-        return False
+        try:
+            await asyncio.to_thread(_send_sync)
+            print(f"[EMAIL/SMTP] 발송 완료: {email}")
+            return True
+        except Exception as e:
+            print(f"[EMAIL/SMTP] 발송 실패: {e}")
+
+    print(f"[DEV EMAIL] {email} → 인증 코드: {code}")
+    return False
 
 
 async def _find_or_create_oauth_user(db: AsyncSession, email: str, name: str, provider: str):
