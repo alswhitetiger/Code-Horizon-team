@@ -75,9 +75,10 @@ async def _send_verification_email(email: str, code: str, name: str):
     try:
         await asyncio.to_thread(_send_sync)
         print(f"[EMAIL] 발송 완료: {email}")
+        return True
     except Exception as e:
         print(f"[EMAIL] 발송 실패: {e}")
-        # 발송 실패해도 회원가입은 진행 (코드는 DB에 저장됨)
+        return False
 
 
 async def _find_or_create_oauth_user(db: AsyncSession, email: str, name: str, provider: str):
@@ -141,11 +142,14 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     )
     db.add(user)
     await db.commit()
-    await _send_verification_email(body.email, code, body.name)
+    email_sent = await _send_verification_email(body.email, code, body.name)
     resp: dict = {"message": "회원가입 완료. 이메일 인증을 완료해주세요.", "email": body.email}
-    # SMTP 미설정 시에만 개발 편의상 코드 노출
-    if not settings.SMTP_HOST:
+    # 이메일 발송 실패 시 코드를 응답에 포함 (화면에 직접 표시)
+    if not email_sent:
         resp["verification_code"] = code
+        resp["email_sent"] = False
+    else:
+        resp["email_sent"] = True
     return resp
 
 

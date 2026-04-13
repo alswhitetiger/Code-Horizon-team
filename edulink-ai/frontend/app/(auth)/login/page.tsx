@@ -11,6 +11,12 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 type Mode = 'login' | 'register' | 'verify'
 
+const DEMO_ACCOUNTS = [
+  { role: '교사', email: 'teacher@demo.com', password: 'demo1234', label: '교사 체험', color: 'bg-blue-500 hover:bg-blue-600' },
+  { role: '학생', email: 'student@demo.com', password: 'demo1234', label: '학생 체험', color: 'bg-green-500 hover:bg-green-600' },
+  { role: '관리자', email: 'admin@demo.com', password: 'demo1234', label: '관리자 체험', color: 'bg-purple-500 hover:bg-purple-600' },
+]
+
 function LoginContent() {
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
@@ -19,7 +25,8 @@ function LoginContent() {
   const [role, setRole] = useState<'student' | 'teacher'>('student')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [verifyCode, setVerifyCode] = useState('')
-  const [devCode, setDevCode] = useState('') // 개발용: 서버에서 반환된 코드
+  const [devCode, setDevCode] = useState('')
+  const [emailSent, setEmailSent] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { setAuth } = useAuthStore()
@@ -49,13 +56,26 @@ function LoginContent() {
       const axiosErr = err as { response?: { data?: { detail?: string }; status?: number } }
       const detail = axiosErr?.response?.data?.detail || '로그인에 실패했습니다.'
       if (axiosErr?.response?.status === 403) {
-        // 미인증 계정 → 인증 화면으로
         setMode('verify')
         setDevCode('')
         setError(detail)
       } else {
         setError(detail)
       }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
+    setLoading(true)
+    setError('')
+    try {
+      const data = await authAPI.login(demoEmail, demoPassword)
+      setAuth(data.user as User, data.access_token)
+      redirect(data.user.role)
+    } catch {
+      setError('데모 계정 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }
@@ -69,8 +89,8 @@ function LoginContent() {
     setLoading(true)
     try {
       const data = await authAPI.register(email, password, name, role)
-      // 이메일 인증 필요
       setDevCode(data.verification_code || '')
+      setEmailSent(data.email_sent === true)
       setMode('verify')
       setError('')
     } catch (err: unknown) {
@@ -101,7 +121,10 @@ function LoginContent() {
     setLoading(true)
     try {
       const data = await authAPI.resendCode(email)
-      setDevCode(data.verification_code || '')
+      if (data.verification_code) {
+        setDevCode(data.verification_code)
+        setEmailSent(false)
+      }
       setError('인증 코드가 재발송되었습니다.')
     } catch {
       setError('재발송에 실패했습니다.')
@@ -125,23 +148,22 @@ function LoginContent() {
           </div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">이메일 인증</h2>
           {devCode ? (
-            <>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                SMTP 미설정 상태입니다. 아래 개발용 코드를 입력해주세요.
-              </p>
-              <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
-                <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">개발 모드 - 인증 코드 (SMTP 설정 후 실제 이메일로 전송됩니다)</p>
-                <p className="text-2xl font-bold text-yellow-800 dark:text-yellow-300 tracking-widest mt-1">{devCode}</p>
+            <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl">
+              <p className="text-sm text-amber-700 dark:text-amber-400 font-medium mb-2">📧 이메일 발송이 불가한 환경입니다.</p>
+              <p className="text-sm text-amber-600 dark:text-amber-300 mb-3">아래 인증 코드를 직접 입력해주세요.</p>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border border-amber-200 dark:border-amber-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">인증 코드</p>
+                <p className="text-3xl font-bold tracking-[0.3em] text-indigo-600 dark:text-indigo-400">{devCode}</p>
               </div>
-            </>
-          ) : (
+            </div>
+          ) : emailSent ? (
             <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg">
               <p className="text-sm text-indigo-700 dark:text-indigo-300">
                 <span className="font-medium">{email}</span> 으로 인증 코드를 발송했습니다.
               </p>
               <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-1">받은편지함(또는 스팸함)을 확인해주세요.</p>
             </div>
-          )}
+          ) : null}
           <form onSubmit={handleVerify} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">인증 코드 6자리</label>
@@ -185,6 +207,20 @@ function LoginContent() {
           <p className="text-gray-500 dark:text-gray-400 mt-2">AI 기반 교육 플랫폼</p>
         </div>
 
+        {/* 데모 계정 */}
+        <div className="mb-5 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 text-center">🎯 데모 계정으로 체험하기</p>
+          <div className="grid grid-cols-3 gap-2">
+            {DEMO_ACCOUNTS.map(acc => (
+              <button key={acc.email} onClick={() => handleDemoLogin(acc.email, acc.password)}
+                disabled={loading}
+                className={`${acc.color} text-white text-xs font-medium py-2 px-1 rounded-lg transition-colors disabled:opacity-50`}>
+                {acc.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* 로그인 / 회원가입 탭 */}
         <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1 mb-6">
           {(['login', 'register'] as const).map(m => (
@@ -197,7 +233,7 @@ function LoginContent() {
           ))}
         </div>
 
-        {/* 소셜 로그인 (네이버, 구글만) */}
+        {/* 소셜 로그인 */}
         <div className="space-y-3 mb-6">
           <a href={`${API_BASE}/api/auth/naver`}
             className="flex items-center justify-center gap-3 w-full py-2.5 rounded-lg font-medium transition-opacity hover:opacity-90"
@@ -298,7 +334,6 @@ function LoginContent() {
             </button>
           </form>
         )}
-
       </div>
     </div>
   )
