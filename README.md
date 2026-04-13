@@ -58,7 +58,7 @@
 - **Framework**: FastAPI (Python)
 - **Database**: SQLite (기본값, 별도 설치 불필요) / PostgreSQL (선택)
 - **Cache**: Redis (선택사항 - 없어도 동작)
-- **Auth**: JWT + 이메일 인증(SMTP) + OAuth (Google, Kakao, Naver)
+- **Auth**: JWT + 이메일 인증(Brevo API) + OAuth (Google, Kakao, Naver)
 - **AI (문제 생성·채점)**: Anthropic Claude API
 - **AI (진로 상담)**: HuggingFace - Qwen2.5
 
@@ -279,7 +279,12 @@ JWT_EXPIRE_MINUTES=1440
 FRONTEND_URL=http://localhost:3000
 BACKEND_URL=http://localhost:8000
 
-# 이메일 인증 (선택사항 - Gmail 앱 비밀번호 사용)
+# 이메일 인증 - Brevo API (프로덕션 권장, 무료 300건/일)
+BREVO_API_KEY=xkeysib-...
+BREVO_SENDER_EMAIL=your@gmail.com
+BREVO_SENDER_NAME=EduLink AI
+
+# 이메일 인증 - SMTP (로컬 개발용, Railway에서는 포트 차단으로 사용 불가)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your@gmail.com
@@ -318,12 +323,14 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 3. **New token** → Role: **Read** → 생성
 4. `hf_...` 토큰을 `.env`의 `HF_TOKEN`에 입력
 
-### Gmail 앱 비밀번호 (이메일 인증 - 선택사항)
-1. Google 계정 → **보안** → **2단계 인증** 활성화
-2. **앱 비밀번호** → 앱: 메일 → 생성
-3. 발급된 16자리 비밀번호를 `.env`의 `SMTP_PASSWORD`에 입력
+### Brevo API (이메일 인증 - 프로덕션 권장, 무료)
+1. [app.brevo.com](https://app.brevo.com) 접속 및 회원가입
+2. 우측 상단 프로필 → **SMTP & API** → **API Keys** → **Generate a new API key**
+3. 생성된 키를 `.env`의 `BREVO_API_KEY`에 입력
+4. **Senders & IPs** → **Senders** → **Add a sender** 에서 발신자 이메일 인증
+5. 인증된 이메일을 `BREVO_SENDER_EMAIL`에 입력
 
-> 이메일 인증을 사용하지 않으면 SMTP 설정을 비워두어도 됩니다.
+> 무료 플랜: 하루 300건 발송 가능. Railway 등 클라우드 환경에서 SMTP 포트가 차단될 경우 Brevo API를 사용하세요.
 
 ---
 
@@ -365,6 +372,24 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 Windows에서 `localhost`는 IPv6(`::1`)로 연결을 시도할 수 있습니다.  
 `.env`의 `DATABASE_URL`에서 `localhost`를 `127.0.0.1`로 변경하세요.
+
+---
+
+## 배포
+
+| 서비스 | 플랫폼 | URL |
+|--------|--------|-----|
+| 프론트엔드 | Vercel | https://frontend-eta-six-92.vercel.app |
+| 백엔드 | Railway | https://backend-production-93de7.up.railway.app |
+| 데이터베이스 | Supabase (PostgreSQL) | - |
+
+### 데모 계정 (프로덕션)
+
+| 역할 | 이메일 | 비밀번호 |
+|------|--------|----------|
+| 교사 | teacher@demo.com | demo1234 |
+| 학생 | student@demo.com | demo1234 |
+| 관리자 | admin@demo.com | demo1234 |
 
 ---
 
