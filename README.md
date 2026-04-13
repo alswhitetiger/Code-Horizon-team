@@ -380,7 +380,6 @@ Windows에서 `localhost`는 IPv6(`::1`)로 연결을 시도할 수 있습니다
 | 서비스 | 플랫폼 | URL |
 |--------|--------|-----|
 | 프론트엔드 | Vercel | https://frontend-eta-six-92.vercel.app |
-| 백엔드 | Railway | https://backend-production-93de7.up.railway.app |
 | 데이터베이스 | Supabase (PostgreSQL) | - |
 
 ### 데모 계정 (프로덕션)
