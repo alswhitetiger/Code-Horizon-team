@@ -52,14 +52,19 @@ async def _send_verification_email(email: str, code: str, name: str):
     # 1) Resend API 우선 시도 (Railway 환경에서 SMTP 포트 차단 문제 해결)
     if settings.RESEND_API_KEY:
         try:
-            import resend as resend_sdk
-            resend_sdk.api_key = settings.RESEND_API_KEY
-            resend_sdk.Emails.send({
-                "from": "EduLink AI <onboarding@resend.dev>",
-                "to": [email],
-                "subject": "[EduLink AI] 이메일 인증 코드",
-                "html": _email_html(name, code),
-            })
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
+                    json={
+                        "from": "EduLink AI <onboarding@resend.dev>",
+                        "to": [email],
+                        "subject": "[EduLink AI] 이메일 인증 코드",
+                        "html": _email_html(name, code),
+                    },
+                    timeout=10,
+                )
+                resp.raise_for_status()
             print(f"[EMAIL/Resend] 발송 완료: {email}")
             return True
         except Exception as e:
