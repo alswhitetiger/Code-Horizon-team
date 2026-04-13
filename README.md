@@ -8,8 +8,9 @@
 
 **EduLink AI**는 인공지능을 활용하여 교사의 업무를 자동화하고, 학생의 학습을 개인화하는 교육 플랫폼입니다.
 
-- 교사는 AI로 시험 문제를 자동 생성하고 제출된 답안을 자동 채점할 수 있습니다.
+- 교사는 AI로 시험 문제를 자동 생성하고, 제출된 답안을 자동 채점할 수 있습니다.
 - 학생은 학습 현황을 실시간으로 확인하고, AI 진로 상담을 받을 수 있습니다.
+- 관리자는 전체 학습 현황, 위험 학생 감지, 리포트 생성이 가능합니다.
 
 ---
 
@@ -19,8 +20,10 @@
 | 기능 | 설명 |
 |------|------|
 | AI 문제 생성 | 과목·학년·주제를 선택하면 AI가 시험 문제를 자동 생성 |
-| 문제 은행 | 생성된 문제를 DB에 저장하고 재사용 (AI 폴백 지원) |
+| 문제 은행 | 생성된 문제를 DB에 저장하고 재사용 (API 절약) |
 | 답안 채점 | 제출된 답안을 AI가 자동 채점 및 피드백 제공 |
+| 강의 영상 관리 | 강의별 동영상 업로드 및 학생 시청 현황 확인 |
+| 학생 진로 관리 | 학생별 진로 목표 및 AI 상담 현황 조회 |
 | 학생 관리 | 강의에 학생 초대, 제거, 현황 조회 |
 | 시험 관리 | 시험 생성·배포, 제출 현황 확인 |
 
@@ -29,8 +32,16 @@
 |------|------|
 | 시험 응시 | 배정된 시험 응시, 결과 즉시 확인 |
 | 학습 현황 | 과목별 점수, 학습 이력 대시보드 |
+| 강의 영상 시청 | 강의별 동영상 시청 및 진도 자동 저장 |
 | AI 진로 상담 | 희망 직업 설정 후 AI와 진로 채팅 상담 |
 | 맞춤 추천 | AI가 학습 패턴 분석 후 보완이 필요한 과목 추천 |
+
+### 관리자 기능
+| 기능 | 설명 |
+|------|------|
+| 전체 현황 | 활성 사용자, 평균 점수, 제출 현황 지표 |
+| 위험 학생 감지 | 학습 부진 위험 학생 자동 분류 및 리스트 제공 |
+| 리포트 생성 | 강의·학생별 학습 리포트 생성 |
 
 ---
 
@@ -48,7 +59,8 @@
 - **Database**: PostgreSQL + SQLAlchemy (비동기)
 - **Cache**: Redis
 - **Auth**: JWT + OAuth (Google, Kakao, Naver)
-- **AI**: Anthropic Claude API, HuggingFace
+- **AI (문제 생성·채점)**: Anthropic Claude API
+- **AI (진로 상담)**: HuggingFace - Qwen2.5
 
 ---
 
@@ -57,26 +69,55 @@
 ```
 Code-Horizon-team/
 └── edulink-ai/
-    ├── frontend/                  # Next.js 프론트엔드
+    ├── frontend/
     │   ├── app/
-    │   │   ├── (auth)/            # 로그인, 회원가입, OAuth 콜백
-    │   │   ├── student/           # 학생 페이지 (대시보드, 시험, 진로)
-    │   │   ├── teacher/           # 교사 페이지 (문제 생성, 채점, 관리)
-    │   │   └── admin/             # 관리자 페이지
-    │   ├── components/            # 재사용 UI 컴포넌트
-    │   ├── lib/                   # API 클라이언트, 유틸리티
-    │   ├── store/                 # Zustand 전역 상태
-    │   └── types/                 # TypeScript 타입 정의
-    └── backend/                   # FastAPI 백엔드
+    │   │   ├── (auth)/                    # 로그인, 회원가입, OAuth 콜백, 프로필 설정
+    │   │   ├── student/                   # 학생 페이지
+    │   │   │   ├── page.tsx               #   학습 현황 대시보드
+    │   │   │   ├── assessments/[id]/      #   강의별 시험 목록
+    │   │   │   ├── assessments/[id]/take/ #   시험 응시
+    │   │   │   ├── career/                #   AI 진로 상담
+    │   │   │   └── videos/[courseId]/     #   강의 영상 시청
+    │   │   ├── teacher/                   # 교사 페이지
+    │   │   │   ├── page.tsx               #   강의·학생 관리 대시보드
+    │   │   │   ├── questions/             #   AI 문제 생성
+    │   │   │   ├── grading/               #   제출 답안 채점
+    │   │   │   └── career/                #   학생 진로 현황
+    │   │   └── admin/                     # 관리자 대시보드
+    │   ├── components/                    # 재사용 UI 컴포넌트
+    │   ├── lib/                           # API 클라이언트, 유틸리티
+    │   ├── store/                         # Zustand 전역 상태
+    │   └── types/                         # TypeScript 타입 정의
+    └── backend/
         ├── app/
-        │   ├── routers/           # API 엔드포인트
-        │   ├── models/            # DB 모델 (SQLAlchemy)
-        │   ├── schemas/           # Pydantic 스키마
-        │   ├── services/          # AI 서비스 로직
-        │   └── core/              # 설정, 인증, DB 연결
-        ├── alembic/               # DB 마이그레이션
-        ├── seed.py                # 데모 계정 및 샘플 데이터 생성
-        └── seed_question_bank_static.py  # 문제 은행 초기 데이터 생성
+        │   ├── routers/                   # API 엔드포인트
+        │   │   ├── auth.py                #   인증 (JWT + OAuth)
+        │   │   ├── teacher.py             #   교사 API (강의, 시험, 영상, 채점)
+        │   │   ├── student.py             #   학생 API (대시보드, 시험, 영상)
+        │   │   ├── career.py              #   진로 AI API
+        │   │   └── admin.py               #   관리자 API (분석, 리포트)
+        │   ├── models/                    # DB 모델
+        │   │   ├── user.py                #   사용자
+        │   │   ├── course.py              #   강의, 수강 등록
+        │   │   ├── assessment.py          #   시험, 문제
+        │   │   ├── submission.py          #   제출 답안
+        │   │   ├── question_bank.py       #   문제 은행
+        │   │   ├── video.py               #   강의 영상, 시청 진도
+        │   │   ├── learning_log.py        #   학습 로그
+        │   │   └── career.py              #   진로 목표
+        │   ├── services/                  # 비즈니스 로직
+        │   │   ├── ai_engine.py           #   Claude API (문제 생성, 채점)
+        │   │   ├── career_ai.py           #   HuggingFace (진로 상담)
+        │   │   ├── question_bank.py       #   문제 은행 조회/저장
+        │   │   ├── analytics.py           #   학습 분석, 위험 학생 감지
+        │   │   ├── assessment.py          #   시험 처리 로직
+        │   │   ├── learning.py            #   학습 이력 처리
+        │   │   └── cache.py               #   Redis 캐시
+        │   └── core/                      # 설정, 인증, DB 연결
+        ├── alembic/                       # DB 마이그레이션
+        ├── seed.py                        # 데모 계정 + 샘플 데이터 생성
+        ├── seed_question_bank.py          # AI로 문제 은행 생성 (Claude API 필요)
+        └── seed_question_bank_static.py   # 정적 문제 은행 생성 (API 불필요)
 ```
 
 ---
@@ -84,8 +125,6 @@ Code-Horizon-team/
 ## 시작하기
 
 ### 필수 설치 항목
-
-아래 프로그램들을 먼저 설치해주세요.
 
 | 프로그램 | 권장 버전 | 다운로드 |
 |----------|-----------|----------|
@@ -107,8 +146,6 @@ cd Code-Horizon-team/edulink-ai
 
 ### 2단계: 데이터베이스 생성
 
-PostgreSQL에 `edulink` 데이터베이스를 생성합니다.
-
 **macOS / Linux:**
 ```bash
 psql -U postgres -c "CREATE DATABASE edulink;"
@@ -116,7 +153,7 @@ psql -U postgres -c "CREATE DATABASE edulink;"
 
 **Windows (PowerShell):**
 ```powershell
-# PostgreSQL 설치 경로에 맞게 수정 (버전 숫자 확인)
+# PostgreSQL 설치 버전에 맞게 경로 수정
 & "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -c "CREATE DATABASE edulink;"
 ```
 
@@ -137,7 +174,7 @@ redis-server
 redis-server.exe
 ```
 
-> Redis가 실행 중이 아니어도 기본 기능은 동작하지만, 캐시 및 일부 AI 기능이 비활성화됩니다.
+> Redis가 없어도 기본 기능은 동작하지만, 캐시 관련 기능이 비활성화됩니다.
 
 ---
 
@@ -165,11 +202,10 @@ pip install -r requirements.txt
 
 **환경변수 파일 설정:**
 ```bash
-# 예시 파일 복사
 cp .env.example .env
 ```
 
-`.env` 파일을 열어 아래 값들을 입력합니다 (자세한 내용은 [환경변수 설정](#환경변수-설정) 참고):
+`.env` 파일을 열어 값 입력 (자세한 내용은 [환경변수 설정](#환경변수-설정) 참고):
 ```env
 DATABASE_URL=postgresql+asyncpg://postgres:비밀번호@127.0.0.1:5432/edulink
 ANTHROPIC_API_KEY=sk-ant-...
@@ -187,8 +223,7 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-백엔드가 `http://localhost:8000` 에서 실행됩니다.  
-API 문서: `http://localhost:8000/docs`
+백엔드: `http://localhost:8000` / API 문서: `http://localhost:8000/docs`
 
 ---
 
@@ -209,7 +244,7 @@ echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
 npm run dev
 ```
 
-프론트엔드가 `http://localhost:3000` 에서 실행됩니다.
+프론트엔드: `http://localhost:3000`
 
 ---
 
@@ -217,14 +252,19 @@ npm run dev
 
 백엔드 가상환경이 활성화된 상태에서 `backend` 디렉토리 안에서 실행합니다.
 
-**데모 계정 + 샘플 강의/시험 생성:**
+**데모 계정 + 샘플 강의/시험 데이터 생성:**
 ```bash
 python seed.py
 ```
 
-**문제 은행 초기 데이터 생성 (API 키 불필요):**
+**문제 은행 생성 - API 불필요 (권장):**
 ```bash
 python seed_question_bank_static.py
+```
+
+**문제 은행 생성 - Claude AI로 자동 생성 (API 키 필요):**
+```bash
+python seed_question_bank.py
 ```
 
 ---
@@ -253,9 +293,9 @@ DATABASE_URL=postgresql+asyncpg://postgres:비밀번호@127.0.0.1:5432/edulink
 # Redis 캐시
 REDIS_URL=redis://localhost:6379
 
-# AI API 키 (필수)
-ANTHROPIC_API_KEY=sk-ant-...        # https://console.anthropic.com
-HF_TOKEN=hf_...                      # https://huggingface.co/settings/tokens
+# AI API 키
+ANTHROPIC_API_KEY=sk-ant-...        # 문제 생성·채점 (유료)
+HF_TOKEN=hf_...                      # 진로 상담 AI (무료)
 
 # JWT 인증 (랜덤 32자 이상 문자열 권장)
 JWT_SECRET=랜덤문자열32자이상
@@ -284,14 +324,14 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ## API 키 발급 방법
 
-### Anthropic Claude API (AI 기능 핵심 - 유료)
+### Anthropic Claude API (문제 생성·채점 - 유료)
 1. [console.anthropic.com](https://console.anthropic.com) 접속 및 회원가입
 2. 좌측 메뉴 **API Keys** → **Create Key**
 3. 생성된 `sk-ant-...` 키를 `.env`의 `ANTHROPIC_API_KEY`에 입력
 
 > 신규 가입 시 $5 무료 크레딧 제공
 
-### HuggingFace Token (진로 AI 기능 - 무료)
+### HuggingFace Token (진로 상담 AI - 무료)
 1. [huggingface.co](https://huggingface.co) 접속 및 회원가입
 2. 우측 상단 프로필 → **Settings** → **Access Tokens**
 3. **New token** → Role: **Read** → 생성
@@ -306,11 +346,13 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 | `/` | 전체 | 메인 로그인 페이지 |
 | `/student` | 학생 | 학습 현황 대시보드 |
 | `/student/assessments/:id` | 학생 | 강의별 시험 목록 |
+| `/student/videos/:courseId` | 학생 | 강의 영상 시청 |
 | `/student/career` | 학생 | AI 진로 상담 |
-| `/teacher` | 교사 | 강의 및 학생 관리 |
+| `/teacher` | 교사 | 강의 및 학생 관리 대시보드 |
 | `/teacher/questions` | 교사 | AI 문제 생성 |
 | `/teacher/grading` | 교사 | 제출 답안 채점 |
-| `/admin` | 관리자 | 전체 현황 및 리포트 |
+| `/teacher/career` | 교사 | 학생 진로 현황 조회 |
+| `/admin` | 관리자 | 전체 현황, 위험 학생, 리포트 |
 
 ---
 
@@ -327,7 +369,7 @@ if sys.platform == "win32":
 
 ### psql 명령어를 찾을 수 없음
 
-PostgreSQL `bin` 경로를 시스템 환경변수 PATH에 추가하거나, 전체 경로를 사용하세요:
+PostgreSQL `bin` 경로를 시스템 PATH에 추가하거나 전체 경로를 사용하세요:
 ```powershell
 & "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres
 ```
