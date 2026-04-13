@@ -368,16 +368,6 @@ Windows에서 `localhost`는 IPv6(`::1`)로 연결을 시도할 수 있습니다
 
 ---
 
-## 기여 방법
-
-1. 이 저장소를 Fork합니다.
-2. 새 브랜치를 생성합니다: `git checkout -b feature/기능명`
-3. 변경 사항을 커밋합니다: `git commit -m "feat: 기능 설명"`
-4. 브랜치에 Push합니다: `git push origin feature/기능명`
-5. Pull Request를 생성합니다.
-
----
-
 ## 팀
 
 **Code Horizon Team** - 2024
