@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
+    # Brevo(SendinBlue) 이메일 설정 (https://app.brevo.com - 무료 300건/일)
+    BREVO_API_KEY: str = ""
+    BREVO_SENDER_EMAIL: str = ""
+    BREVO_SENDER_NAME: str = "EduLink AI"
+
     # Resend 이메일 설정 (https://resend.com - 무료 3000건/월)
     RESEND_API_KEY: str = ""
 

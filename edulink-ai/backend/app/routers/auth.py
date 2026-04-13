@@ -49,7 +49,31 @@ def _email_html(name: str, code: str) -> str:
 async def _send_verification_email(email: str, code: str, name: str):
     """Resend API → SMTP → 실패 시 False 반환"""
 
-    # 1) Resend API 우선 시도 (Railway 환경에서 SMTP 포트 차단 문제 해결)
+    # 1) Brevo API 우선 시도 (Railway 환경 HTTPS 방식)
+    if settings.BREVO_API_KEY and settings.BREVO_SENDER_EMAIL:
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    "https://api.brevo.com/v3/smtp/email",
+                    headers={
+                        "api-key": settings.BREVO_API_KEY,
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "sender": {"name": settings.BREVO_SENDER_NAME, "email": settings.BREVO_SENDER_EMAIL},
+                        "to": [{"email": email, "name": name}],
+                        "subject": "[EduLink AI] 이메일 인증 코드",
+                        "htmlContent": _email_html(name, code),
+                    },
+                    timeout=10,
+                )
+                resp.raise_for_status()
+            print(f"[EMAIL/Brevo] 발송 완료: {email}")
+            return True
+        except Exception as e:
+            print(f"[EMAIL/Brevo] 실패: {e}")
+
+    # 2) Resend API 시도
     if settings.RESEND_API_KEY:
         try:
             async with httpx.AsyncClient() as client:
