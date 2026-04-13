@@ -43,7 +43,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Image src="/logo.png" alt="EDU Simplete" width={180} height={60} className="h-14 w-auto object-contain" priority />
+            <Link href="/admin">
+              <Image src="/logo.png" alt="EDU Simplete" width={180} height={60} className="h-14 w-auto object-contain cursor-pointer" priority />
+            </Link>
             <div className="hidden sm:flex items-center gap-5">
               {NAV_LINKS.map(l => (
                 <Link key={l.href} href={l.href}
